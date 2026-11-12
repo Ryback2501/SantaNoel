@@ -7,9 +7,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "dev": "http-server web -p 5173 -c-1",
+    "build": "node scripts/build.mjs"
   },
   "devDependencies": {
+    "http-server": "^14.1.1",
     "vitest": "^5.1.0"
   }
 }
