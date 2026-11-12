@@ -9,7 +9,8 @@
 #                              CLASPRC_JSON secret and removes it afterwards)
 #
 # It never prints the credentials. apps-script/.clasp.json (the development project) is left
-# untouched: the code is copied to a temporary folder with its own .clasp.json.
+# untouched: the code is copied to a temporary folder, whose copy of .clasp.json gets the
+# production script ID.
 set -euo pipefail
 
 : "${APPS_SCRIPT_ID:?APPS_SCRIPT_ID is not set}"
@@ -17,12 +18,15 @@ set -euo pipefail
 
 CLASP=(npx --yes @google/clasp@3.4.1)
 root=$(cd "$(dirname "$0")/.." && pwd)
-version=$(node -p "require('$root/package.json').version")
+version=$(node -p 'require(process.argv[1]).version' "$root/package.json")
 
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 cp -R "$root/apps-script/." "$work/"
-printf '{ "scriptId": "%s", "rootDir": "" }\n' "$APPS_SCRIPT_ID" > "$work/.clasp.json"
+# Same clasp settings as development; only the script ID changes.
+node -e 'const fs = require("fs"); const [file, id] = process.argv.slice(1);
+const config = JSON.parse(fs.readFileSync(file, "utf8")); config.scriptId = id;
+fs.writeFileSync(file, JSON.stringify(config, null, 2) + "\n");' "$work/.clasp.json" "$APPS_SCRIPT_ID"
 
 cd "$work"
 "${CLASP[@]}" push --force
