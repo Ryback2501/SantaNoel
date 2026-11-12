@@ -146,10 +146,12 @@ Secret: `CLASPRC_JSON`, the content of `~/.clasprc.json` (the clasp credentials)
    ```
    The `scriptId` is in that folder's `.clasp.json`; the deployment ID is printed by the last command.
 3. Open the project (`https://script.google.com/d/<scriptId>/edit`) and run **`setup`** in `sheets.gs`, as in step 5 of the backend setup. Rename the spreadsheet it creates to "SantaNoel" in Drive (the name is only a label; the code uses the ID).
-4. Set every Script Property of the checklist above in the production project (`setup` sets `SPREADSHEET_ID`).
-5. Turn on Pages with GitHub Actions as its source: `gh api -X POST repos/Ryback2501/SantaNoel/pages -f build_type=workflow`.
-6. Set the repo variables of the table above, and the secret yourself: `gh secret set CLASPRC_JSON < ~/.clasprc.json`.
-7. Cut a release: the site shows "Conectado con el servidor".
+4. Still in the editor, deploy once by hand so the web app gets your authorization: **Deploy → Manage deployments → `produccion` → edit (pencil) → Version: New version → Deploy**, and accept the permission screen ("This app hasn't been verified by Google" is expected for your own script: continue). Without this step the web app answers every call with "Acceso denegado", even with "Who has access: Anyone". The deployment ID does not change, and later releases update it from the command line.
+5. Check it answers: `curl -sL -H 'Content-Type: text/plain;charset=utf-8' --data '{"action":"ping"}' https://script.google.com/macros/s/<deploymentId>/exec` prints `{"ok":true}`.
+6. Set every Script Property of the checklist above in the production project (`setup` sets `SPREADSHEET_ID`).
+7. Turn on Pages with GitHub Actions as its source: `gh api -X POST repos/Ryback2501/SantaNoel/pages -f build_type=workflow`.
+8. Set the repo variables of the table above, and the secret yourself: `gh secret set CLASPRC_JSON < ~/.clasprc.json`.
+9. Cut a release: the site shows "Conectado con el servidor".
 
 ### Maintenance
 
