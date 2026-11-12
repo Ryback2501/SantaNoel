@@ -54,6 +54,12 @@ describe('build with a production backend address (BACKEND_URL)', () => {
     expect(readFileSync(join(outDir, 'config.js'), 'utf8')).toBe(devConfig);
   });
 
+  it('treats an empty BACKEND_URL (an unset repo variable in the workflow) as not set', () => {
+    const result = build('');
+    expect(result.status).toBe(0);
+    expect(readFileSync(join(outDir, 'config.js'), 'utf8')).toBe(devConfig);
+  });
+
   it.each([
     ['not https', 'http://script.google.com/macros/s/X/exec'],
     ['not a URL', 'production'],
