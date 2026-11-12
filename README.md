@@ -23,7 +23,7 @@ npm ci
 npm run dev
 ```
 
-It serves `web/` at http://127.0.0.1:5173 (caching off, so a reload always shows your latest changes). Open that address in the browser. Stop it with `Ctrl+C`.
+It serves `web/` at http://localhost:5173, reachable only from this computer (caching off, so a reload always shows your latest changes). Open that address in the browser. Stop it with `Ctrl+C`.
 
 ## Lint
 

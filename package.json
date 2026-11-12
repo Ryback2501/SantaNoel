@@ -8,9 +8,9 @@
   },
   "scripts": {
     "test:unit": "vitest run",
-    "dev": "http-server web -p 5173 -c-1",
+    "dev": "http-server web -a localhost -p 5173 -c-1",
     "build": "node scripts/build.mjs",
-    "lint": "eslint . && prettier --check --no-error-on-unmatched-pattern web apps-script scripts tests README.md \"*.json\" \"*.mjs\""
+    "lint": "eslint . && prettier --check web apps-script scripts tests README.md \"*.json\" \"*.mjs\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
