@@ -111,3 +111,50 @@ All data lives in one spreadsheet per project, with these tabs (row 1 holds the 
 - `organizers`: Email (the Google accounts allowed to organize; edited by hand)
 
 The spreadsheet is not shared with anyone: the web app runs as its owner and controls access itself.
+
+## Production
+
+Every release (a `dev → main` fast-forward) runs `.github/workflows/release.yml`, which:
+
+1. builds the site with `BACKEND_URL` set, so the published `config.js` points to the production backend (local `npm run dev` keeps the development one);
+2. publishes the site to GitHub Pages: https://ryback2501.github.io/SantaNoel/ (when `PAGES_DEPLOY_ENABLED` is `true`);
+3. runs `scripts/deploy-backend.sh`, which pushes `apps-script/` to the production project and updates its **existing** web app deployment, so the backend address never changes (when `BACKEND_DEPLOY_ENABLED` is `true`).
+
+### GitHub settings
+
+Repo variables (Settings → Secrets and variables → Actions → Variables):
+
+| Variable                    | Value                                                    |
+| --------------------------- | -------------------------------------------------------- |
+| `BACKEND_URL`               | `https://script.google.com/macros/s/<deploymentId>/exec` |
+| `APPS_SCRIPT_ID`            | the production `scriptId`                                |
+| `APPS_SCRIPT_DEPLOYMENT_ID` | the production web app deployment ID                     |
+| `PAGES_DEPLOY_ENABLED`      | `true`                                                   |
+| `BACKEND_DEPLOY_ENABLED`    | `true`                                                   |
+
+Secret: `CLASPRC_JSON`, the content of `~/.clasprc.json` (the clasp credentials). It is never committed: the workflow writes it to the runner only for the backend job and deletes it afterwards. If `BACKEND_URL` is not set, the Pages deploy stops with an error rather than publish a site that talks to the development backend. The site is published only after the backend deploy succeeds (or when that deploy is turned off).
+
+### Setting up production from scratch
+
+1. Turn on the **Apps Script API** and log in with clasp (steps 1–2 of the backend setup above).
+2. In an empty folder outside the repository, create the project, copy the code in, upload it and create the web app deployment:
+   ```bash
+   npx --yes @google/clasp@3.4.1 create-script --type standalone --title "SantaNoel" --rootDir .
+   cp <repo>/apps-script/*.js <repo>/apps-script/appsscript.json .
+   npx --yes @google/clasp@3.4.1 push --force
+   npx --yes @google/clasp@3.4.1 create-deployment -d produccion
+   ```
+   The `scriptId` is in that folder's `.clasp.json`; the deployment ID is printed by the last command.
+3. Open the project (`https://script.google.com/d/<scriptId>/edit`) and run **`setup`** in `sheets.gs`, as in step 5 of the backend setup. Rename the spreadsheet it creates to "SantaNoel" in Drive (the name is only a label; the code uses the ID).
+4. Still in the editor, deploy once by hand so the web app gets your authorization: **Deploy → Manage deployments → `produccion` → edit (pencil) → Version: New version → Deploy**, and accept the permission screen ("This app hasn't been verified by Google" is expected for your own script: continue). Without this step the web app answers every call with "Acceso denegado", even with "Who has access: Anyone". The deployment ID does not change, and later releases update it from the command line.
+5. Check it answers: `curl -sL -H 'Content-Type: text/plain;charset=utf-8' --data '{"action":"ping"}' https://script.google.com/macros/s/<deploymentId>/exec` prints `{"ok":true}`.
+6. Set every Script Property of the checklist above in the production project (`setup` sets `SPREADSHEET_ID`).
+7. Turn on Pages with GitHub Actions as its source: `gh api -X POST repos/Ryback2501/SantaNoel/pages -f build_type=workflow`.
+8. Set the repo variables of the table above, and the secret yourself: `gh secret set CLASPRC_JSON < ~/.clasprc.json`.
+9. Cut a release: the site shows "Conectado con el servidor".
+
+### Maintenance
+
+- **The backend job fails with an authentication error**: the clasp token expired or was revoked. Run `npm run clasp -- login` again, then `gh secret set CLASPRC_JSON < ~/.clasprc.json`, and re-run the failed job.
+- **A new Script Property** (added by a later change) must be set in the production project before the next release.
+- **Google sign-in**: the OAuth client's authorized JavaScript origins must include `https://ryback2501.github.io` (and `http://localhost:5173` for development).
