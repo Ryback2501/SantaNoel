@@ -4,7 +4,7 @@
 // When the BACKEND_URL environment variable is set (the release workflow sets it to the
 // production web app), the published config.js points to that backend instead of the
 // development one kept in web/config.js.
-import { cpSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,15 +16,19 @@ const target = process.argv[2]
 // An https URL with no spaces, quotes or backslashes, so it can go inside a JS string as is.
 const SAFE_HTTPS_URL = /^https:\/\/[^\s'"\\]+$/;
 
-function configFor(backendUrl) {
-  return `// Public settings of the site (no secrets here). Written by the build for this release.
-const SANTANOEL_CONFIG = {
-  backendUrl: '${backendUrl}',
-};
-`;
+// The published config.js is web/config.js with only the backendUrl value replaced, so every
+// other setting (the Google client ID, …) is kept.
+const BACKEND_URL_ENTRY = /backendUrl:\s*'[^']*'/;
+
+function configFor(sourceConfig, backendUrl) {
+  if (!BACKEND_URL_ENTRY.test(sourceConfig)) {
+    console.error('web/config.js has no backendUrl entry to replace.');
+    process.exit(1);
+  }
+  // A function, so a `$` in the address is never read as a replacement pattern.
+  return sourceConfig.replace(BACKEND_URL_ENTRY, () => `backendUrl: '${backendUrl}'`);
 }
 
-// An empty value counts as not set: an unset repo variable reaches the workflow as ''.
 const backendUrl = process.env.BACKEND_URL || undefined;
 if (backendUrl !== undefined && !SAFE_HTTPS_URL.test(backendUrl)) {
   console.error('BACKEND_URL must be an https:// address with no spaces or quotes.');
@@ -35,7 +39,8 @@ rmSync(target, { recursive: true, force: true });
 cpSync(source, target, { recursive: true });
 
 if (backendUrl !== undefined) {
-  writeFileSync(join(target, 'config.js'), configFor(backendUrl));
+  const configPath = join(target, 'config.js');
+  writeFileSync(configPath, configFor(readFileSync(configPath, 'utf8'), backendUrl));
   console.log(`Built ${target} from web/, using the backend ${backendUrl}`);
 } else {
   console.log(`Built ${target} from web/`);
