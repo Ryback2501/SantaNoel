@@ -90,6 +90,22 @@ function setup() {
   console.log('Hoja de cálculo lista: ' + spreadsheet.getUrl());
 }
 
+/** The emails in the Email column of the `organizers` tab (below the header), without blanks. */
+function readOrganizerEmails(spreadsheet) {
+  const sheet = spreadsheet.getSheetByName('organizers');
+  const rows = sheet.getLastRow() - 1;
+  if (rows < 1) return [];
+  return sheet
+    .getRange(2, 1, rows, 1)
+    .getValues()
+    .map(function (row) {
+      return String(row[0]).trim();
+    })
+    .filter(function (email) {
+      return email !== '';
+    });
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { SHEETS, ensureSheets };
+  module.exports = { SHEETS, ensureSheets, readOrganizerEmails };
 }
