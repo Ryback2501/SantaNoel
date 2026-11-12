@@ -23,6 +23,7 @@ export default [
       sourceType: 'script',
       globals: {
         module: 'readonly',
+        console: 'readonly',
         ContentService: 'readonly',
         LockService: 'readonly',
         PropertiesService: 'readonly',
