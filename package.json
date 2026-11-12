@@ -1,0 +1,24 @@
+{
+  "name": "santanoel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Amigo invisible: organiza el sorteo, envía los correos y comparte la carta a los Reyes Magos.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test:unit": "vitest run",
+    "dev": "http-server web -a localhost -p 5173 -c-1",
+    "build": "node scripts/build.mjs",
+    "lint": "eslint . && prettier --check web apps-script scripts tests README.md \"*.json\" \"*.mjs\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "http-server": "^14.1.1",
+    "prettier": "^3.10.1",
+    "vitest": "^5.1.0"
+  }
+}
