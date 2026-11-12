@@ -32,3 +32,8 @@ h1 {
   color: var(--red);
   margin-top: 0;
 }
+
+.server-status {
+  color: var(--green);
+  font-size: 0.9rem;
+}
