@@ -37,7 +37,7 @@ describe('build with a production backend address (BACKEND_URL)', () => {
 
   it('no longer points to the development backend', () => {
     build(PROD_URL);
-    const devUrl = devConfig.match(/backendUrl: '([^']+)'/)[1];
+    const devUrl = devConfig.match(/backendUrl:\s*'([^']+)'/)[1];
     expect(readFileSync(join(outDir, 'config.js'), 'utf8')).not.toContain(devUrl);
   });
 
