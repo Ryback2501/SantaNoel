@@ -35,12 +35,17 @@ if (backendUrl !== undefined && !SAFE_HTTPS_URL.test(backendUrl)) {
   process.exit(1);
 }
 
+// Prepared before the output folder is touched, so a failure never leaves a half-built folder.
+const publishedConfig =
+  backendUrl !== undefined
+    ? configFor(readFileSync(join(source, 'config.js'), 'utf8'), backendUrl)
+    : undefined;
+
 rmSync(target, { recursive: true, force: true });
 cpSync(source, target, { recursive: true });
 
-if (backendUrl !== undefined) {
-  const configPath = join(target, 'config.js');
-  writeFileSync(configPath, configFor(readFileSync(configPath, 'utf8'), backendUrl));
+if (publishedConfig !== undefined) {
+  writeFileSync(join(target, 'config.js'), publishedConfig);
   console.log(`Built ${target} from web/, using the backend ${backendUrl}`);
 } else {
   console.log(`Built ${target} from web/`);
