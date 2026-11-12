@@ -1,4 +1,4 @@
-/* global checkConnection, startSession, resumeSession, endSession, SANTANOEL_CONFIG */
+/* global checkConnection, startSession, resumeSession, endSession, SIGN_IN_FAILED, SANTANOEL_CONFIG */
 
 // Home page: the connection status, and the organizer's sign-in with Google.
 document.addEventListener('DOMContentLoaded', async function () {
@@ -26,7 +26,12 @@ document.addEventListener('DOMContentLoaded', async function () {
       // Never sign in by itself: only when the organizer clicks the button.
       auto_select: false,
       callback: async function (response) {
-        show(await startSession(backendUrl, response.credential, sessionStorage));
+        try {
+          show(await startSession(backendUrl, response.credential, sessionStorage));
+        } catch {
+          // The browser blocks this site's storage: the session cannot be kept.
+          show({ signedIn: false, message: SIGN_IN_FAILED });
+        }
       },
     });
     google.accounts.id.renderButton(document.getElementById('signin-button'), {
@@ -39,7 +44,11 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   document.getElementById('signout-button').addEventListener('click', function () {
-    endSession(sessionStorage);
+    try {
+      endSession(sessionStorage);
+    } catch {
+      // Storage blocked: there is no stored token to forget.
+    }
     if (window.google && google.accounts) {
       google.accounts.id.disableAutoSelect();
     }
@@ -53,11 +62,15 @@ document.addEventListener('DOMContentLoaded', async function () {
     window.onGoogleLibraryLoad = setUpGoogleButton;
   }
 
+  // The two checks are independent: each shows its own part as soon as it is ready.
   status.textContent = 'Comprobando la conexión…';
-  const [view, connection] = await Promise.all([
-    resumeSession(backendUrl, sessionStorage),
-    checkConnection(backendUrl),
-  ]);
-  show(view);
-  status.textContent = connection;
+  checkConnection(backendUrl).then(function (connection) {
+    status.textContent = connection;
+  });
+  try {
+    show(await resumeSession(backendUrl, sessionStorage));
+  } catch {
+    // Storage blocked: nothing stored, so show the sign-in button.
+    show({ signedIn: false, message: '' });
+  }
 });
