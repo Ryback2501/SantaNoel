@@ -97,9 +97,10 @@ The development project already exists for this repository. These are the steps 
 
 Settings and secrets of the backend live in the project's **Script Properties** (Apps Script editor → Project Settings → Script Properties), never in the code or the frontend. Every property must be set in both projects (development and production).
 
-| Property         | What it is                          | Set by          |
-| ---------------- | ----------------------------------- | --------------- |
-| `SPREADSHEET_ID` | ID of the spreadsheet with the data | `setup` (above) |
+| Property          | What it is                                                            | Set by                            |
+| ----------------- | --------------------------------------------------------------------- | --------------------------------- |
+| `SPREADSHEET_ID`  | ID of the spreadsheet with the data                                   | `setup` (above)                   |
+| `OAUTH_CLIENT_ID` | Client ID of "Sign in with Google" (same value as in `web/config.js`) | by hand (see "Organizer sign-in") |
 
 ### Spreadsheet
 
@@ -111,6 +112,29 @@ All data lives in one spreadsheet per project, with these tabs (row 1 holds the 
 - `organizers`: Email (the Google accounts allowed to organize; edited by hand)
 
 The spreadsheet is not shared with anyone: the web app runs as its owner and controls access itself.
+
+### Organizer sign-in (Google)
+
+Organizers sign in with "Sign in with Google". The page gets a Google ID token and sends it with every organizer request; the server checks it with Google on every request (`whoami` and every later organizer action) and lets in only the emails of the `organizers` tab. The token is kept only for the browser tab (`sessionStorage`); "Cerrar sesión" forgets it.
+
+One OAuth client serves development and production. To create it (once):
+
+1. Open the Google Cloud console (https://console.cloud.google.com/) with the same Google account, and create a project (for example "SantaNoel").
+2. **Google Auth Platform → Branding** (the OAuth consent screen): app name "Amigo invisible", your email as support and developer contact; audience **External**. Under **Audience**, publish the app (**In production**): sign-in asks only for name and email, which needs no Google review; in "Testing" only the listed test users could sign in.
+3. **Google Auth Platform → Clients → Create client**: type **Web application**, name "SantaNoel web". **Authorized JavaScript origins**: `http://localhost:5173` and `https://ryback2501.github.io`. No redirect URIs.
+4. Copy the **Client ID** (`….apps.googleusercontent.com`; it is public, not a secret) into:
+   - `web/config.js` → `googleClientId`;
+   - the Script Property `OAUTH_CLIENT_ID` of **both** Apps Script projects.
+5. Add the organizers' Google emails to the `organizers` tab of each spreadsheet (one per row, below the header).
+
+The backend calls Google to check tokens, so each Apps Script project needs that permission once: after pushing this code, run `setup` again in the editor and accept the new permission. In production, also deploy once from the editor (**Deploy → Manage deployments → edit → New version → Deploy**), as in the production setup; otherwise the web app keeps refusing calls.
+
+To check the server by hand (`<url>` is the web app address):
+
+```bash
+curl -sL -H 'Content-Type: text/plain;charset=utf-8' --data '{"action":"whoami","idToken":"made-up"}' <url>
+# {"ok":false,"error":"invalid_token"}
+```
 
 ## Production
 
@@ -157,4 +181,5 @@ Secret: `CLASPRC_JSON`, the content of `~/.clasprc.json` (the clasp credentials)
 
 - **The backend job fails with an authentication error**: the clasp token expired or was revoked. Run `npm run clasp -- login` again, then `gh secret set CLASPRC_JSON < ~/.clasprc.json`, and re-run the failed job.
 - **A new Script Property** (added by a later change) must be set in the production project before the next release.
+- **A change that needs a new Google permission** (for example the first one that calls an outside service): before the next release, run `setup` once in the production editor to accept it, then deploy once from the editor (**Deploy → Manage deployments → edit → New version → Deploy**).
 - **Google sign-in**: the OAuth client's authorized JavaScript origins must include `https://ryback2501.github.io` (and `http://localhost:5173` for development).
