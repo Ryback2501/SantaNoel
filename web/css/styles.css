@@ -37,3 +37,36 @@ h1 {
   color: var(--green);
   font-size: 0.9rem;
 }
+
+.signin,
+.organizer {
+  margin: 1.5rem 0;
+}
+
+.signin-message {
+  color: var(--red);
+}
+
+.signin-message:empty {
+  display: none;
+}
+
+.greeting {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--red);
+  border-radius: 0.25rem;
+  background: #fff;
+  color: var(--red);
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--red);
+  color: #fff;
+}
