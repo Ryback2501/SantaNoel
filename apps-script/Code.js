@@ -26,10 +26,12 @@ function appsScriptServices() {
   return {
     clientId: properties.getProperty('OAUTH_CLIENT_ID'),
     fetchTokenInfo: function (idToken) {
-      const response = UrlFetchApp.fetch(
-        'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken),
-        { muteHttpExceptions: true },
-      );
+      // The token goes in the POST body, never in the URL, so no log or trace can capture it.
+      const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo', {
+        method: 'post',
+        payload: { id_token: idToken },
+        muteHttpExceptions: true,
+      });
       let body;
       try {
         body = JSON.parse(response.getContentText());
