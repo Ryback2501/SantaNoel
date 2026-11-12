@@ -17,7 +17,7 @@ export default [
     files: ['web/**/*.js'],
     languageOptions: {
       sourceType: 'script',
-      globals: { ...globals.browser, module: 'readonly' },
+      globals: { ...globals.browser, module: 'readonly', require: 'readonly', google: 'readonly' },
     },
     rules: {
       'no-unused-vars': ['error', { vars: 'local' }],
