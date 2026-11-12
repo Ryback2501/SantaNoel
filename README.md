@@ -132,7 +132,7 @@ Repo variables (Settings → Secrets and variables → Actions → Variables):
 | `PAGES_DEPLOY_ENABLED`      | `true`                                                   |
 | `BACKEND_DEPLOY_ENABLED`    | `true`                                                   |
 
-Secret: `CLASPRC_JSON`, the content of `~/.clasprc.json` (the clasp credentials). It is never committed: the workflow writes it to the runner only for the backend job and deletes it afterwards. If `BACKEND_URL` is not set, the release still succeeds but the site keeps the development address.
+Secret: `CLASPRC_JSON`, the content of `~/.clasprc.json` (the clasp credentials). It is never committed: the workflow writes it to the runner only for the backend job and deletes it afterwards. If `BACKEND_URL` is not set, the Pages deploy stops with an error rather than publish a site that talks to the development backend. The site is published only after the backend deploy succeeds (or when that deploy is turned off).
 
 ### Setting up production from scratch
 

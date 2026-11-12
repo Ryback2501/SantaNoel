@@ -14,6 +14,11 @@ permissions:
   contents: write
   packages: write
 
+# One release at a time, so an older release can never finish after a newer one and overwrite it.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   read-version:
     name: Read version
@@ -98,9 +103,14 @@ jobs:
 
   deploy:
     name: Deploy (prod, gated)
-    needs: [github-release]
+    # The site goes out after the backend it calls: once the backend deploy succeeded, or when
+    # that deploy is turned off (skipped). Never after it failed.
+    needs: [github-release, deploy-backend]
     runs-on: ubuntu-latest
-    if: vars.PAGES_DEPLOY_ENABLED == 'true'
+    if: >-
+      always() && vars.PAGES_DEPLOY_ENABLED == 'true' &&
+      needs.github-release.result == 'success' &&
+      (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
     permissions:
       contents: read
       pages: write
@@ -115,9 +125,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: "npm ci"
-      - run: "npm run build"
+      - name: Build with the production backend
         env:
           BACKEND_URL: ${{ vars.BACKEND_URL }}
+        run: |
+          # The published site must never talk to the development backend.
+          if [ -z "$BACKEND_URL" ]; then
+            echo "::error::The BACKEND_URL repo variable is not set."
+            exit 1
+          fi
+          npm run build
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
@@ -149,6 +166,10 @@ jobs:
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
         run: |
+          if [ -z "$CLASPRC_JSON" ]; then
+            echo "::error::The CLASPRC_JSON secret is not set."
+            exit 1
+          fi
           umask 077
           printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
       - name: Push the code and update the production deployment
