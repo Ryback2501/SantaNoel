@@ -120,12 +120,12 @@ Organizers sign in with "Sign in with Google". The page gets a Google ID token a
 One OAuth client serves development and production. To create it (once):
 
 1. Open the Google Cloud console (https://console.cloud.google.com/) with the same Google account, and create a project (for example "SantaNoel").
-2. **Google Auth Platform → Branding** (the OAuth consent screen): app name "Amigo invisible", your email as support and developer contact; audience **External**. Under **Audience**, publish the app (**In production**): sign-in asks only for name and email, which needs no Google review; in "Testing" only the listed test users could sign in.
+2. **Google Auth Platform → Branding** (the OAuth consent screen): app name "Amigo invisible", your email as support and developer contact; audience **External**. Leave the app in **Testing**: publishing it needs a home page, a privacy policy and terms of service links. In Testing only the **test users** can sign in, so under **Audience → Test users** add the Google email of every organizer (up to 100). Participants never sign in with Google, so they are not added.
 3. **Google Auth Platform → Clients → Create client**: type **Web application**, name "SantaNoel web". **Authorized JavaScript origins**: `http://localhost:5173` and `https://ryback2501.github.io`. No redirect URIs.
 4. Copy the **Client ID** (`….apps.googleusercontent.com`; it is public, not a secret) into:
    - `web/config.js` → `googleClientId`;
    - the Script Property `OAUTH_CLIENT_ID` of **both** Apps Script projects.
-5. Add the organizers' Google emails to the `organizers` tab of each spreadsheet (one per row, below the header).
+5. Add the organizers' Google emails to the `organizers` tab of each spreadsheet (one per row, below the header). A new organizer goes in both places: the test users (step 2) and the `organizers` tab.
 
 The backend calls Google to check tokens, so each Apps Script project needs that permission once: after pushing this code, run `setup` again in the editor and accept the new permission. In production, also deploy once from the editor (**Deploy → Manage deployments → edit → New version → Deploy**), as in the production setup; otherwise the web app keeps refusing calls.
 
