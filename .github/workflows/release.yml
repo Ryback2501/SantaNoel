@@ -2,9 +2,9 @@ name: Release
 
 # Fires on every push to main (i.e. after a dev->main fast-forward). Tags the
 # version, builds & uploads release artifacts, creates the GitHub Release, and —
-# only when the matching repo variable is enabled — publishes a Docker image and/or
-# deploys to a host. Generalized from Mockscii. Build/version surfaces are the only
-# stack-specific bits; publish/deploy stay gated so a fresh repo releases cleanly.
+# only when the matching repo variable is enabled — publishes the site to GitHub
+# Pages (PAGES_DEPLOY_ENABLED) and updates the production Apps Script web app in
+# place (BACKEND_DEPLOY_ENABLED). The production setup is described in the README.
 
 on:
   push:
@@ -65,6 +65,8 @@ jobs:
       - name: Build & zip
         env:
           VERSION: ${{ needs.read-version.outputs.version }}
+          # The production backend: the build writes it into config.js (and fails if unset).
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
         run: |
           npm ci
           npm run build
@@ -114,6 +116,8 @@ jobs:
           cache: npm
       - run: "npm ci"
       - run: "npm run build"
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
@@ -128,3 +132,38 @@ jobs:
     if: vars.PAGES_DEPLOY_ENABLED != 'true'
     steps:
       - run: echo "PAGES_DEPLOY_ENABLED repo variable is not 'true' — deploy skipped."
+
+  deploy-backend:
+    name: Deploy backend (prod, gated)
+    needs: [github-release]
+    runs-on: ubuntu-latest
+    if: vars.BACKEND_DEPLOY_ENABLED == 'true'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Write clasp credentials
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          umask 077
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+      - name: Push the code and update the production deployment
+        env:
+          APPS_SCRIPT_ID: ${{ vars.APPS_SCRIPT_ID }}
+          APPS_SCRIPT_DEPLOYMENT_ID: ${{ vars.APPS_SCRIPT_DEPLOYMENT_ID }}
+        run: bash scripts/deploy-backend.sh
+      - name: Remove clasp credentials
+        if: always()
+        run: rm -f ~/.clasprc.json
+
+  deploy-backend-disabled:
+    name: Deploy backend (prod, gated — DISABLED)
+    needs: [github-release]
+    runs-on: ubuntu-latest
+    if: vars.BACKEND_DEPLOY_ENABLED != 'true'
+    steps:
+      - run: echo "BACKEND_DEPLOY_ENABLED repo variable is not 'true' — backend deploy skipped."
