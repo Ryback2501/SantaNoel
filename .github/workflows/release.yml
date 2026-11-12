@@ -65,7 +65,7 @@ jobs:
       - name: Build & zip
         env:
           VERSION: ${{ needs.read-version.outputs.version }}
-          # The production backend: the build writes it into config.js (and fails if unset).
+          # The production backend: the build writes it into config.js when the variable is set.
           BACKEND_URL: ${{ vars.BACKEND_URL }}
         run: |
           npm ci

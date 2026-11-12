@@ -24,7 +24,8 @@ const SANTANOEL_CONFIG = {
 `;
 }
 
-const backendUrl = process.env.BACKEND_URL;
+// An empty value counts as not set: an unset repo variable reaches the workflow as ''.
+const backendUrl = process.env.BACKEND_URL || undefined;
 if (backendUrl !== undefined && !SAFE_HTTPS_URL.test(backendUrl)) {
   console.error('BACKEND_URL must be an https:// address with no spaces or quotes.');
   process.exit(1);
