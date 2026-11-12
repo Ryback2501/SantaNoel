@@ -14,4 +14,22 @@ describe('home page (web/index.html)', () => {
   it('shows the Spanish welcome text', () => {
     expect(html).toContain(WELCOME);
   });
+
+  it("loads Google's sign-in script", () => {
+    expect(html).toContain('<script src="https://accounts.google.com/gsi/client" async');
+  });
+
+  it('has a place for the "Iniciar sesión con Google" button', () => {
+    expect(html).toMatch(/id="signin-button"/);
+  });
+
+  it('starts with the organizer area hidden, so it never shows before the check', () => {
+    expect(html).toMatch(/<section[^>]*id="organizer-area"[^>]*\shidden[\s>]/);
+  });
+
+  it('has a "Cerrar sesión" button inside the organizer area', () => {
+    const area = html.match(/<section[^>]*id="organizer-area"[\s\S]*?<\/section>/);
+    expect(area).not.toBeNull();
+    expect(area[0]).toMatch(/<button[^>]*id="signout-button"[^>]*>\s*Cerrar sesión\s*<\/button>/);
+  });
 });
