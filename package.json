@@ -10,7 +10,10 @@
     "test:unit": "vitest run",
     "dev": "http-server web -a localhost -p 5173 -c-1",
     "build": "node scripts/build.mjs",
-    "lint": "eslint . && prettier --check web apps-script scripts tests README.md \"*.json\" \"*.mjs\""
+    "lint": "eslint . && prettier --check web apps-script scripts tests README.md \"*.json\" \"*.mjs\"",
+    "clasp": "npx --yes @google/clasp@3.4.1",
+    "backend:push": "cd apps-script && npx --yes @google/clasp@3.4.1 push --force",
+    "backend:deploy": "cd apps-script && npx --yes @google/clasp@3.4.1 create-deployment -i \"$npm_package_config_devDeploymentId\" -d desarrollo"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -20,5 +23,8 @@
     "http-server": "^14.1.1",
     "prettier": "^3.10.1",
     "vitest": "^5.1.0"
+  },
+  "config": {
+    "devDeploymentId": "AKfycbyl_su-pueGYW60N1kdgfi59ah4b3ibbI1wms3zRoJZ8s3L7OnxL9X46CdwSZIoKljn_A"
   }
 }

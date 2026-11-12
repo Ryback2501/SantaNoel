@@ -12,8 +12,16 @@ export default [
   },
   {
     // Frontend: runs in the browser.
+    // Classic scripts share one global scope, so values are used from other files; `module`
+    // exists only when the tests load a file in Node.
     files: ['web/**/*.js'],
-    languageOptions: { sourceType: 'script', globals: { ...globals.browser } },
+    languageOptions: {
+      sourceType: 'script',
+      globals: { ...globals.browser, module: 'readonly' },
+    },
+    rules: {
+      'no-unused-vars': ['error', { vars: 'local' }],
+    },
   },
   {
     // Backend: Google Apps Script (V8). Every file shares one global scope, so functions are
@@ -23,6 +31,7 @@ export default [
       sourceType: 'script',
       globals: {
         module: 'readonly',
+        console: 'readonly',
         ContentService: 'readonly',
         LockService: 'readonly',
         PropertiesService: 'readonly',
