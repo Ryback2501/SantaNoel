@@ -6,5 +6,5 @@
 const SANTANOEL_CONFIG = {
   backendUrl:
     'https://script.google.com/macros/s/AKfycbyl_su-pueGYW60N1kdgfi59ah4b3ibbI1wms3zRoJZ8s3L7OnxL9X46CdwSZIoKljn_A/exec',
-  googleClientId: '',
+  googleClientId: '808733003714-mo1jpmmroelgjpdg1hqc54htqp2utivd.apps.googleusercontent.com',
 };
