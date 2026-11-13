@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const { exclusionsSummary, exclusionsLine } = require('../web/js/exclusions.js');
+const { exclusionsSummary, exclusionsLine, exclusionOptions } = require('../web/js/exclusions.js');
 const { updateParticipant } = require('../web/js/groups.js');
 
 const URL = 'https://script.google.com/macros/s/EXAMPLE/exec';
@@ -117,4 +117,26 @@ describe('editing a participant with exclusions (updateParticipant)', () => {
       expect(view).toEqual({ kind: 'listChanged', message: LIST_CHANGED });
     },
   );
+});
+
+describe('the tick boxes of the "Puede regalar a" field (exclusionOptions)', () => {
+  it('lists every other participant as "<number>. <name>", in number order, all ticked with no exclusions', () => {
+    expect(exclusionOptions(PARTICIPANTS, 2, [])).toEqual([
+      { number: 1, label: '1. Ana', ticked: true },
+      { number: 3, label: '3. Marta', ticked: true },
+      { number: 4, label: '4. Ana', ticked: true },
+    ]);
+  });
+
+  it('unticks the excluded ones: ticked means "can give to"', () => {
+    expect(exclusionOptions(PARTICIPANTS, 2, [3, 1]).map((o) => [o.number, o.ticked])).toEqual([
+      [1, false],
+      [3, true],
+      [4, true],
+    ]);
+  });
+
+  it('lists nobody when the participant is alone in the group', () => {
+    expect(exclusionOptions([PARTICIPANTS[0]], 1, [])).toEqual([]);
+  });
 });
