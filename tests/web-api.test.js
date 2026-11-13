@@ -16,11 +16,14 @@ describe('calling the backend (web/js/api.js)', () => {
   it('sends a POST with a text/plain JSON body containing the action', async () => {
     const fetchFn = vi.fn(async () => jsonResponse({ ok: true }));
     await callBackend(URL, 'ping', {}, fetchFn);
-    expect(fetchFn).toHaveBeenCalledWith(URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'ping' }),
-    });
+    const [url, options] = fetchFn.mock.calls[0];
+    expect(url).toBe(URL);
+    // The request also carries the signal that cancels it after the time limit, and nothing else.
+    expect(Object.keys(options).sort()).toEqual(['body', 'headers', 'method', 'signal']);
+    expect(options.method).toBe('POST');
+    expect(options.headers).toEqual({ 'Content-Type': 'text/plain;charset=utf-8' });
+    expect(options.body).toBe(JSON.stringify({ action: 'ping' }));
+    expect(options.signal).toBeInstanceOf(AbortSignal);
   });
 
   it('returns the JSON answer', async () => {
