@@ -9,6 +9,11 @@
   box-sizing: border-box;
 }
 
+/* `hidden` always wins, even over a class that sets `display`. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   font-family:
@@ -69,4 +74,74 @@ h1 {
 .button:hover {
   background: var(--red);
   color: #fff;
+}
+
+.button-secondary {
+  border-color: #9e9e9e;
+  color: var(--text);
+}
+
+.button-secondary:hover {
+  background: #eeeeee;
+  color: var(--text);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.groups-list {
+  padding-left: 1.25rem;
+}
+
+.groups-list a,
+.back-link {
+  color: var(--red);
+}
+
+.groups-message,
+.page-message {
+  margin: 1rem 0;
+}
+
+.groups-message:empty,
+.page-message:empty,
+.form-message:empty {
+  display: none;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 24rem;
+  margin: 1rem 0;
+}
+
+.form input {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid #9e9e9e;
+  border-radius: 0.25rem;
+}
+
+.form-message {
+  color: var(--red);
+  margin: 0;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.organizer > .button,
+.group-content > .button {
+  display: block;
+  margin: 1rem 0;
+}
+
+.participants {
+  padding-left: 1.25rem;
 }

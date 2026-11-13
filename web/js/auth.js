@@ -39,6 +39,23 @@ function endSession(storage) {
   storage.removeItem(TOKEN_KEY);
 }
 
+/** The token kept for this tab, for the other requests of the page; null when there is none. */
+function storedToken(storage) {
+  try {
+    return storage.getItem(TOKEN_KEY) || null;
+  } catch {
+    // The browser blocks this site's storage: nothing can be kept.
+    return null;
+  }
+}
+
+/** The message for a sign-in refusal (session_expired, not_authorized, …) from the server. */
+function signInMessageFor(error) {
+  return Object.prototype.hasOwnProperty.call(SIGN_IN_MESSAGES, error)
+    ? SIGN_IN_MESSAGES[error]
+    : SIGN_IN_FAILED;
+}
+
 async function checkSession(backendUrl, idToken, storage, fetchFn) {
   let answer;
   try {
@@ -51,8 +68,7 @@ async function checkSession(backendUrl, idToken, storage, fetchFn) {
   }
   // Any refusal or failure: forget the token, so a reload does not try it again.
   endSession(storage);
-  const known = answer && Object.prototype.hasOwnProperty.call(SIGN_IN_MESSAGES, answer.error);
-  return { signedIn: false, message: known ? SIGN_IN_MESSAGES[answer.error] : SIGN_IN_FAILED };
+  return { signedIn: false, message: signInMessageFor(answer && answer.error) };
 }
 
 // In the browser every script shares one global scope; the Node tests load api.js with require.
@@ -61,5 +77,12 @@ function backendCall() {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { startSession, resumeSession, endSession, greetingFor };
+  module.exports = {
+    startSession,
+    resumeSession,
+    endSession,
+    greetingFor,
+    storedToken,
+    signInMessageFor,
+  };
 }

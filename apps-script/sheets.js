@@ -106,6 +106,75 @@ function readOrganizerEmails(spreadsheet) {
     });
 }
 
+/**
+ * The groups and participants tabs, as the server's group code sees them (apps-script/groups.js):
+ * plain objects in, plain objects out. Text cells are written as plain text, so a name like
+ * `2026` or `1/12` never becomes a number or a date.
+ */
+function spreadsheetStore(spreadsheet) {
+  function rowsOf(name) {
+    const sheet = spreadsheet.getSheetByName(name);
+    const count = sheet.getLastRow() - 1;
+    if (count < 1) return [];
+    return sheet.getRange(2, 1, count, sheet.getLastColumn()).getValues();
+  }
+
+  // Appends one row; `textColumns` are the 1-based columns written as plain text.
+  function append(name, values, textColumns) {
+    const sheet = spreadsheet.getSheetByName(name);
+    const row = sheet.getLastRow() + 1;
+    textColumns.forEach(function (column) {
+      sheet.getRange(row, column, 1, 1).setNumberFormats([['@']]);
+    });
+    sheet.getRange(row, 1, 1, values.length).setValues([values]);
+  }
+
+  return {
+    readGroups: function () {
+      return rowsOf('groups')
+        .filter(function (row) {
+          return row[0] !== '';
+        })
+        .map(function (row) {
+          return { id: String(row[0]), name: String(row[1]), created: row[2] };
+        });
+    },
+    readParticipants: function () {
+      return rowsOf('participants')
+        .filter(function (row) {
+          return row[0] !== '';
+        })
+        .map(function (row) {
+          return {
+            groupId: String(row[0]),
+            number: Number(row[1]),
+            name: String(row[2]),
+            email: String(row[3]),
+          };
+        });
+    },
+    addGroup: function (group) {
+      append('groups', [group.id, group.name, group.created, '', '', ''], [1, 2]);
+    },
+    addParticipant: function (participant) {
+      append(
+        'participants',
+        [participant.groupId, participant.number, participant.name, participant.email, '', '', ''],
+        [1, 3, 4],
+      );
+    },
+    renameGroup: function (id, name) {
+      const index = rowsOf('groups').findIndex(function (row) {
+        return String(row[0]) === id;
+      });
+      if (index === -1) throw new Error('No group with ID ' + id);
+      const cell = spreadsheet.getSheetByName('groups').getRange(index + 2, 2, 1, 1);
+      cell.setNumberFormats([['@']]);
+      cell.setValues([[name]]);
+    },
+  };
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { SHEETS, ensureSheets, readOrganizerEmails };
+  module.exports = { SHEETS, ensureSheets, readOrganizerEmails, spreadsheetStore };
 }

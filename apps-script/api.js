@@ -5,7 +5,7 @@
  * is trusted: the body is parsed and checked here before any action runs.
  */
 
-/* global authorizeOrganizer */
+/* global authorizeOrganizer, listGroups, createGroup, getGroup, renameGroup */
 
 const ACTIONS = {
   ping: function () {
@@ -15,13 +15,51 @@ const ACTIONS = {
   whoami: function (request, services) {
     return organizerCheck()(request.idToken, services);
   },
+  // The organizer's groups (apps-script/groups.js). Saves run inside the lock.
+  listGroups: asOrganizer(function (request, email, services) {
+    return groupActions().listGroups(email, services.store());
+  }),
+  createGroup: asOrganizer(function (request, email, services) {
+    return services.withLock(function () {
+      return groupActions().createGroup(request, email, services.store(), services);
+    });
+  }),
+  getGroup: asOrganizer(function (request, email, services) {
+    return groupActions().getGroup(request, email, services.store());
+  }),
+  renameGroup: asOrganizer(function (request, email, services) {
+    return services.withLock(function () {
+      return groupActions().renameGroup(request, email, services.store());
+    });
+  }),
 };
+
+// Runs `action` only for a signed-in organizer, with their verified email; otherwise answers
+// with the refusal of the sign-in check, before anything is read or saved.
+function asOrganizer(action) {
+  return function (request, services) {
+    const organizer = organizerCheck()(request.idToken, services);
+    if (!organizer.ok) return organizer;
+    return action(request, organizer.email, services);
+  };
+}
 
 // In Apps Script every file shares one global scope; the Node tests load auth.js with require.
 function organizerCheck() {
   return typeof module !== 'undefined'
     ? require('./auth.js').authorizeOrganizer
     : authorizeOrganizer;
+}
+
+function groupActions() {
+  return typeof module !== 'undefined'
+    ? require('./groups.js')
+    : {
+        listGroups: listGroups,
+        createGroup: createGroup,
+        getGroup: getGroup,
+        renameGroup: renameGroup,
+      };
 }
 
 /**
