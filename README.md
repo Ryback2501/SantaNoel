@@ -129,6 +129,8 @@ One OAuth client serves development and production. To create it (once):
 
 The backend calls Google to check tokens, so each Apps Script project needs that permission once: after pushing this code, run `setup` again in the editor and accept the new permission. In production, also deploy once from the editor (**Deploy → Manage deployments → edit → New version → Deploy**), as in the production setup; otherwise the web app keeps refusing calls.
 
+On Google's permission screen, tick **every** permission ("Select all"), including "Connect to an external service". If no permission screen appears and sign-in still answers `server_error`, Google kept an older grant without that permission: remove the project's access at <https://myaccount.google.com/connections>, then run `setup` again and accept both permissions. The project's **Executions** page does not show the error, so to see it, run a function from the editor and read the **Execution log**.
+
 To check the server by hand (`<url>` is the web app address):
 
 ```bash
