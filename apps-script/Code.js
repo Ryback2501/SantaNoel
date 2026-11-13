@@ -4,7 +4,7 @@
  * answer. The answer is always JSON.
  */
 
-/* global handleRequest, readOrganizerEmails, readTokenExpiry */
+/* global handleRequest, readOrganizerEmails, readTokenExpiry, spreadsheetStore */
 
 function doPost(e) {
   let result;
@@ -20,9 +20,16 @@ function doPost(e) {
   );
 }
 
-/** The real services the actions use (see apps-script/auth.js). */
+/** The real services the actions use (see apps-script/auth.js and apps-script/groups.js). */
 function appsScriptServices() {
   const properties = PropertiesService.getScriptProperties();
+  let spreadsheet = null;
+  // Opened once per request, and only by the actions that need it (ping never does).
+  function openSpreadsheet() {
+    if (!spreadsheet)
+      spreadsheet = SpreadsheetApp.openById(properties.getProperty('SPREADSHEET_ID'));
+    return spreadsheet;
+  }
   return {
     clientId: properties.getProperty('OAUTH_CLIENT_ID'),
     fetchTokenInfo: function (idToken) {
@@ -46,10 +53,27 @@ function appsScriptServices() {
       });
     },
     organizerEmails: function () {
-      return readOrganizerEmails(SpreadsheetApp.openById(properties.getProperty('SPREADSHEET_ID')));
+      return readOrganizerEmails(openSpreadsheet());
     },
     now: function () {
       return Date.now();
+    },
+    store: function () {
+      return spreadsheetStore(openSpreadsheet());
+    },
+    newId: function () {
+      return Utilities.getUuid();
+    },
+    // One save at a time for the whole web app, so two requests never mix their rows. If the
+    // lock is not free within 10 seconds, waitLock throws and the answer is server_error.
+    withLock: function (fn) {
+      const lock = LockService.getScriptLock();
+      lock.waitLock(10000);
+      try {
+        return fn();
+      } finally {
+        lock.releaseLock();
+      }
     },
   };
 }
