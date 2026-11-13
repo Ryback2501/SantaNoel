@@ -123,6 +123,7 @@ describe('creating a group (createGroup)', () => {
       group: {
         id,
         name: 'Navidad 2026',
+        locked: false,
         participants: [{ number: 1, name: 'Ana', email: 'ana@example.com' }],
       },
     });
@@ -204,6 +205,7 @@ describe('opening a group (getGroup)', () => {
     expect(again.get(id).group).toEqual({
       id,
       name: 'Navidad 2026',
+      locked: false,
       participants: [{ number: 1, name: 'Ana', email: 'ana@example.com' }],
     });
   });

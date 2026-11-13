@@ -136,7 +136,12 @@ function spreadsheetStore(spreadsheet) {
           return row[0] !== '';
         })
         .map(function (row) {
-          return { id: String(row[0]), name: String(row[1]), created: row[2] };
+          return {
+            id: String(row[0]),
+            name: String(row[1]),
+            created: row[2],
+            draw: String(row[3]),
+          };
         });
     },
     readParticipants: function () {
@@ -150,6 +155,7 @@ function spreadsheetStore(spreadsheet) {
             number: Number(row[1]),
             name: String(row[2]),
             email: String(row[3]),
+            exclusions: String(row[4]),
           };
         });
     },
@@ -172,8 +178,39 @@ function spreadsheetStore(spreadsheet) {
       cell.setNumberFormats([['@']]);
       cell.setValues([[name]]);
     },
+    // Changes only the given fields (number, name, email, exclusions) of one participant's row.
+    updateParticipant: function (groupId, number, changes) {
+      const row = participantRow(groupId, number);
+      const sheet = spreadsheet.getSheetByName('participants');
+      Object.keys(PARTICIPANT_CELLS).forEach(function (field) {
+        if (!Object.prototype.hasOwnProperty.call(changes, field)) return;
+        const cell = sheet.getRange(row, PARTICIPANT_CELLS[field].column, 1, 1);
+        if (PARTICIPANT_CELLS[field].text) cell.setNumberFormats([['@']]);
+        cell.setValues([[changes[field]]]);
+      });
+    },
+    deleteParticipant: function (groupId, number) {
+      spreadsheet.getSheetByName('participants').deleteRow(participantRow(groupId, number));
+    },
   };
+
+  // The sheet row (1-based) of a group's participant.
+  function participantRow(groupId, number) {
+    const index = rowsOf('participants').findIndex(function (row) {
+      return String(row[0]) === groupId && Number(row[1]) === number;
+    });
+    if (index === -1) throw new Error('No participant ' + number + ' in group ' + groupId);
+    return index + 2;
+  }
 }
+
+// The participant fields that can change, with their column and whether it is plain text.
+const PARTICIPANT_CELLS = {
+  number: { column: 2, text: false },
+  name: { column: 3, text: true },
+  email: { column: 4, text: true },
+  exclusions: { column: 5, text: true },
+};
 
 if (typeof module !== 'undefined') {
   module.exports = { SHEETS, ensureSheets, readOrganizerEmails, spreadsheetStore };

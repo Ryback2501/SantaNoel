@@ -18,6 +18,9 @@ function fakeSpreadsheet(tabs) {
       formats: {},
       getLastRow: () => sheet.rows.length,
       getLastColumn: () => sheet.rows[0].length,
+      deleteRow: (row) => {
+        sheet.rows.splice(row - 1, 1);
+      },
       getRange(row, col, numRows, numCols) {
         return {
           getValues: () =>
@@ -72,10 +75,10 @@ describe('groups and participants in the spreadsheet (spreadsheetStore)', () => 
     expect(store.readParticipants()).toEqual([]);
   });
 
-  it('reads the groups below the header', () => {
-    const ss = spreadsheet([['g-1', 'Navidad 2026', CREATED, '', '', '']]);
+  it('reads the groups below the header, with their Draw', () => {
+    const ss = spreadsheet([['g-1', 'Navidad 2026', CREATED, '1-2,2-1', '', '']]);
     expect(spreadsheetStore(ss).readGroups()).toEqual([
-      { id: 'g-1', name: 'Navidad 2026', created: CREATED },
+      { id: 'g-1', name: 'Navidad 2026', created: CREATED, draw: '1-2,2-1' },
     ]);
   });
 
@@ -92,7 +95,7 @@ describe('groups and participants in the spreadsheet (spreadsheetStore)', () => 
   it('reads the participants below the header, with their number as a number', () => {
     const ss = spreadsheet([], [['g-1', '1', 'Ana', 'ana@example.com', '', '', '']]);
     expect(spreadsheetStore(ss).readParticipants()).toEqual([
-      { groupId: 'g-1', number: 1, name: 'Ana', email: 'ana@example.com' },
+      { groupId: 'g-1', number: 1, name: 'Ana', email: 'ana@example.com', exclusions: '' },
     ]);
   });
 
@@ -149,5 +152,58 @@ describe('groups and participants in the spreadsheet (spreadsheetStore)', () => 
     spreadsheetStore(ss).renameGroup('g-2', 'Navidad en casa');
     expect(ss.sheets.groups.rows[1]).toEqual(['g-1', 'Navidad 2026', CREATED, '', '', '']);
     expect(ss.sheets.groups.rows[2]).toEqual(['g-2', 'Navidad en casa', CREATED, '1-2', '', '']);
+  });
+});
+
+describe('changing participants in the spreadsheet (spreadsheetStore)', () => {
+  const rows = () => [
+    ['g-1', 1, 'Ana', 'ana@example.com', '2,3', '', ''],
+    ['g-2', 2, 'Otro', 'otro@example.com', '', '', ''],
+    ['g-1', 2, 'Luis', 'luis@example.com', '3', '', ''],
+    ['g-1', 3, 'Marta', 'marta@example.com', '', '', ''],
+  ];
+
+  it('reads the Exclusions of each participant as text', () => {
+    const ss = spreadsheet([], rows());
+    expect(spreadsheetStore(ss).readParticipants()[0].exclusions).toBe('2,3');
+  });
+
+  it("changes only the given cells of that group's participant", () => {
+    const ss = spreadsheet([], rows());
+    spreadsheetStore(ss).updateParticipant('g-1', 2, { name: 'Luisito', email: 'l@example.com' });
+    expect(ss.sheets.participants.rows.slice(1)).toEqual([
+      rows()[0],
+      rows()[1],
+      ['g-1', 2, 'Luisito', 'l@example.com', '3', '', ''],
+      rows()[3],
+    ]);
+  });
+
+  it('changes the number and the Exclusions, writing Exclusions as plain text', () => {
+    const ss = spreadsheet([], rows());
+    spreadsheetStore(ss).updateParticipant('g-1', 3, { number: 2, exclusions: '1' });
+    expect(ss.sheets.participants.rows[4]).toEqual([
+      'g-1',
+      2,
+      'Marta',
+      'marta@example.com',
+      '1',
+      '',
+      '',
+    ]);
+    expect(ss.sheets.participants.formats['5,5']).toBe('@');
+  });
+
+  it('writes a changed Name and Email as plain text', () => {
+    const ss = spreadsheet([], rows());
+    spreadsheetStore(ss).updateParticipant('g-1', 2, { name: '2026', email: 'a@b.c' });
+    expect(ss.sheets.participants.formats['4,3']).toBe('@');
+    expect(ss.sheets.participants.formats['4,4']).toBe('@');
+  });
+
+  it("deletes the whole row of that group's participant, leaving the others", () => {
+    const ss = spreadsheet([], rows());
+    spreadsheetStore(ss).deleteParticipant('g-1', 2);
+    expect(ss.sheets.participants.rows.slice(1)).toEqual([rows()[0], rows()[1], rows()[3]]);
   });
 });

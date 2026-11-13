@@ -5,7 +5,8 @@
  * is trusted: the body is parsed and checked here before any action runs.
  */
 
-/* global authorizeOrganizer, listGroups, createGroup, getGroup, renameGroup */
+/* global authorizeOrganizer, listGroups, createGroup, getGroup, renameGroup, addParticipant,
+   updateParticipant, removeParticipant */
 
 const ACTIONS = {
   ping: function () {
@@ -32,6 +33,22 @@ const ACTIONS = {
       return groupActions().renameGroup(request, email, services.store());
     });
   }),
+  // The participants of the organizer's group (apps-script/participants.js), all inside the lock.
+  addParticipant: asOrganizer(function (request, email, services) {
+    return services.withLock(function () {
+      return participantActions().addParticipant(request, email, services.store());
+    });
+  }),
+  updateParticipant: asOrganizer(function (request, email, services) {
+    return services.withLock(function () {
+      return participantActions().updateParticipant(request, email, services.store());
+    });
+  }),
+  removeParticipant: asOrganizer(function (request, email, services) {
+    return services.withLock(function () {
+      return participantActions().removeParticipant(request, email, services.store());
+    });
+  }),
 };
 
 // Runs `action` only for a signed-in organizer, with their verified email; otherwise answers
@@ -49,6 +66,16 @@ function organizerCheck() {
   return typeof module !== 'undefined'
     ? require('./auth.js').authorizeOrganizer
     : authorizeOrganizer;
+}
+
+function participantActions() {
+  return typeof module !== 'undefined'
+    ? require('./participants.js')
+    : {
+        addParticipant: addParticipant,
+        updateParticipant: updateParticipant,
+        removeParticipant: removeParticipant,
+      };
 }
 
 function groupActions() {
