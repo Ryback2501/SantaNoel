@@ -27,8 +27,45 @@
           </div>
         </form>
 
-        <!-- Shown only: participants are not edited on this page. -->
+        <!-- Shown when the draw is done: the list below stays visible, but cannot change. -->
+        <p id="lock-message" class="lock-message" role="status"></p>
+
         <ul id="participants" class="participants"></ul>
+        <p id="participants-message" class="form-message" role="alert"></p>
+
+        <button type="button" id="add-participant-button" class="button">Añadir participante</button>
+
+        <form id="add-participant-form" class="form" hidden>
+          <label for="participant-name">Nombre</label>
+          <input id="participant-name" name="participant-name" type="text" autocomplete="off" />
+          <label for="participant-email">Correo</label>
+          <input id="participant-email" name="participant-email" type="text" inputmode="email" autocomplete="off" />
+          <p id="add-participant-message" class="form-message" role="alert"></p>
+          <div class="form-buttons">
+            <button type="submit" class="button">Guardar</button>
+            <button type="button" id="add-participant-cancel" class="button button-secondary">Cancelar</button>
+          </div>
+        </form>
+
+        <!-- One participant's row; its edit form opens inside it. -->
+        <template id="participant-row-template">
+          <li class="participant">
+            <span class="participant-text"></span>
+            <span class="participant-buttons">
+              <button type="button" class="button button-small edit-button">Editar</button>
+              <button type="button" class="button button-small button-secondary remove-button">Quitar</button>
+            </span>
+            <form class="form edit-form" hidden>
+              <label>Nombre <input class="edit-name" type="text" autocomplete="off" /></label>
+              <label> Correo <input class="edit-email" type="text" inputmode="email" autocomplete="off" /> </label>
+              <p class="form-message edit-message" role="alert"></p>
+              <div class="form-buttons">
+                <button type="submit" class="button">Guardar</button>
+                <button type="button" class="button button-secondary edit-cancel">Cancelar</button>
+              </div>
+            </form>
+          </li>
+        </template>
       </div>
     </main>
     <script src="config.js"></script>
