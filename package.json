@@ -1,6 +1,6 @@
 {
   "name": "santanoel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Amigo invisible: organiza el sorteo, envía los correos y comparte la carta a los Reyes Magos.",
   "engines": {
