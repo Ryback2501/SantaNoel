@@ -124,7 +124,7 @@ describe('creating a group (createGroup)', () => {
         id,
         name: 'Navidad 2026',
         locked: false,
-        participants: [{ number: 1, name: 'Ana', email: 'ana@example.com' }],
+        participants: [{ number: 1, name: 'Ana', email: 'ana@example.com', exclusions: [] }],
       },
     });
   });
@@ -183,10 +183,10 @@ describe('creating a group (createGroup)', () => {
     const first = ana.create('Navidad 2026', 'Ana').group;
     const second = ana.create('Navidad 2027', 'Anita').group;
     expect(ana.get(first.id).group.participants).toEqual([
-      { number: 1, name: 'Ana', email: 'ana@example.com' },
+      { number: 1, name: 'Ana', email: 'ana@example.com', exclusions: [] },
     ]);
     expect(ana.get(second.id).group.participants).toEqual([
-      { number: 1, name: 'Anita', email: 'ana@example.com' },
+      { number: 1, name: 'Anita', email: 'ana@example.com', exclusions: [] },
     ]);
   });
 
@@ -206,7 +206,7 @@ describe('opening a group (getGroup)', () => {
       id,
       name: 'Navidad 2026',
       locked: false,
-      participants: [{ number: 1, name: 'Ana', email: 'ana@example.com' }],
+      participants: [{ number: 1, name: 'Ana', email: 'ana@example.com', exclusions: [] }],
     });
   });
 

@@ -80,8 +80,9 @@ function anaWithGroup(store = memoryStore()) {
   };
 }
 
-const ANA = { number: 1, name: 'Ana', email: 'ana@example.com' };
-const LUIS = { number: 2, name: 'Luis', email: 'luis@example.com' };
+// Every answer gives each participant's exclusions as a list of numbers (#7).
+const ANA = { number: 1, name: 'Ana', email: 'ana@example.com', exclusions: [] };
+const LUIS = { number: 2, name: 'Luis', email: 'luis@example.com', exclusions: [] };
 
 describe('adding a participant (addParticipant)', () => {
   it('adds "Luis" as number 2 and answers with the whole list', () => {
@@ -168,7 +169,7 @@ describe('editing a participant (updateParticipant)', () => {
     const ana = anaWithGroup();
     ana.add('Luis', 'luis@example.com');
     const answer = ana.update(2, { name: 'Luisito', email: 'luisito@example.com' });
-    const luisito = { number: 2, name: 'Luisito', email: 'luisito@example.com' };
+    const luisito = { number: 2, name: 'Luisito', email: 'luisito@example.com', exclusions: [] };
     expect(answer).toEqual({ ok: true, participants: [ANA, luisito] });
     expect(ana.get().group.participants).toEqual([ANA, luisito]);
   });
@@ -205,7 +206,7 @@ describe('editing a participant (updateParticipant)', () => {
     const ana = anaWithGroup();
     expect(ana.update(1, { name: 'Anita' })).toEqual({
       ok: true,
-      participants: [{ number: 1, name: 'Anita', email: 'ana@example.com' }],
+      participants: [{ number: 1, name: 'Anita', email: 'ana@example.com', exclusions: [] }],
     });
   });
 
@@ -256,9 +257,9 @@ describe('removing a participant (removeParticipant)', () => {
     expect(answer).toEqual({
       ok: true,
       participants: [
-        ANA,
-        { number: 2, name: 'Marta', email: 'marta@example.com' },
-        { number: 3, name: 'Pepe', email: 'pepe@example.com' },
+        { ...ANA, exclusions: [2] },
+        { number: 2, name: 'Marta', email: 'marta@example.com', exclusions: [3] },
+        { number: 3, name: 'Pepe', email: 'pepe@example.com', exclusions: [] },
       ],
     });
     // Luis (old 2) is dropped; Marta (old 3) is now 2 and Pepe (old 4) is now 3.
