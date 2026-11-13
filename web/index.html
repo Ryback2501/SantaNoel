@@ -10,10 +10,24 @@
     <main class="page">
       <h1>Amigo invisible</h1>
       <p>Organiza tu amigo invisible: haz el sorteo, envía los correos y comparte la carta a los Reyes Magos.</p>
+
+      <!-- Both areas start hidden: the page shows one only after checking the session. -->
+      <section id="signin-area" class="signin" hidden>
+        <div id="signin-button"></div>
+        <p id="signin-message" class="signin-message" role="alert"></p>
+      </section>
+
+      <section id="organizer-area" class="organizer" hidden>
+        <p id="greeting" class="greeting"></p>
+        <button type="button" id="signout-button" class="button">Cerrar sesión</button>
+      </section>
+
       <p id="server-status" class="server-status" role="status"></p>
     </main>
+    <script src="https://accounts.google.com/gsi/client" async></script>
     <script src="config.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/home.js"></script>
   </body>
 </html>

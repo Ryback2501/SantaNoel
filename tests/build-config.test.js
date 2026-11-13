@@ -41,6 +41,13 @@ describe('build with a production backend address (BACKEND_URL)', () => {
     expect(readFileSync(join(outDir, 'config.js'), 'utf8')).not.toContain(devUrl);
   });
 
+  it('keeps the Google sign-in client ID of web/config.js', () => {
+    const clientId = devConfig.match(/googleClientId:\s*'[^']*'/);
+    expect(clientId).not.toBeNull();
+    build(PROD_URL);
+    expect(readFileSync(join(outDir, 'config.js'), 'utf8')).toContain(clientId[0]);
+  });
+
   it('leaves every other file as in web/', () => {
     build(PROD_URL);
     expect(readFileSync(join(outDir, 'index.html'), 'utf8')).toBe(
