@@ -28,7 +28,6 @@ function memoryStore() {
 // The outside world of the server, signed in as `email`. The store is shared between organizers.
 function services(email, store, { status = 200, organizers } = {}) {
   let ids = 0;
-  let clock = START;
   return {
     clientId: CLIENT_ID,
     fetchTokenInfo: vi.fn(() => ({
@@ -44,7 +43,8 @@ function services(email, store, { status = 200, organizers } = {}) {
     })),
     tokenExpiry: vi.fn(() => null),
     organizerEmails: vi.fn(() => organizers || ['ana@example.com', 'luis@example.com']),
-    now: () => (clock += 60000),
+    // One minute later for each new group; reading the time has no side effect.
+    now: () => START + ids * 60000,
     newId: () => (ids += 1) && `${email}-group-${ids}`,
     store: () => store,
     withLock: vi.fn((fn) => fn()),
