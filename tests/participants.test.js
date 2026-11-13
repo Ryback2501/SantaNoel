@@ -80,8 +80,9 @@ function anaWithGroup(store = memoryStore()) {
   };
 }
 
-const ANA = { number: 1, name: 'Ana', email: 'ana@example.com' };
-const LUIS = { number: 2, name: 'Luis', email: 'luis@example.com' };
+// Every answer gives each participant's exclusions as a list of numbers (#7).
+const ANA = { number: 1, name: 'Ana', email: 'ana@example.com', exclusions: [] };
+const LUIS = { number: 2, name: 'Luis', email: 'luis@example.com', exclusions: [] };
 
 describe('adding a participant (addParticipant)', () => {
   it('adds "Luis" as number 2 and answers with the whole list', () => {
@@ -168,7 +169,7 @@ describe('editing a participant (updateParticipant)', () => {
     const ana = anaWithGroup();
     ana.add('Luis', 'luis@example.com');
     const answer = ana.update(2, { name: 'Luisito', email: 'luisito@example.com' });
-    const luisito = { number: 2, name: 'Luisito', email: 'luisito@example.com' };
+    const luisito = { number: 2, name: 'Luisito', email: 'luisito@example.com', exclusions: [] };
     expect(answer).toEqual({ ok: true, participants: [ANA, luisito] });
     expect(ana.get().group.participants).toEqual([ANA, luisito]);
   });
@@ -205,7 +206,7 @@ describe('editing a participant (updateParticipant)', () => {
     const ana = anaWithGroup();
     expect(ana.update(1, { name: 'Anita' })).toEqual({
       ok: true,
-      participants: [{ number: 1, name: 'Anita', email: 'ana@example.com' }],
+      participants: [{ number: 1, name: 'Anita', email: 'ana@example.com', exclusions: [] }],
     });
   });
 
@@ -256,9 +257,9 @@ describe('removing a participant (removeParticipant)', () => {
     expect(answer).toEqual({
       ok: true,
       participants: [
-        ANA,
-        { number: 2, name: 'Marta', email: 'marta@example.com' },
-        { number: 3, name: 'Pepe', email: 'pepe@example.com' },
+        { ...ANA, exclusions: [2] },
+        { number: 2, name: 'Marta', email: 'marta@example.com', exclusions: [3] },
+        { number: 3, name: 'Pepe', email: 'pepe@example.com', exclusions: [] },
       ],
     });
     // Luis (old 2) is dropped; Marta (old 3) is now 2 and Pepe (old 4) is now 3.
@@ -381,5 +382,234 @@ describe('access: only the organizer of the group', () => {
     ana.svc.withLock.mockClear();
     ana.call(action, { groupId: ana.groupId, ...data });
     expect(ana.svc.withLock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("choosing a participant's exclusions (updateParticipant with exclusions)", () => {
+  // Ana's group with Luis (2), Marta (3) and Pepe (4).
+  function fourParticipants() {
+    const ana = anaWithGroup();
+    ana.add('Luis', 'luis@example.com');
+    ana.add('Marta', 'marta@example.com');
+    ana.add('Pepe', 'pepe@example.com');
+    return ana;
+  }
+
+  // The participants the edit form showed: their numbers and emails.
+  function shown(ana) {
+    return ana.get().group.participants.map((p) => ({ number: p.number, email: p.email }));
+  }
+
+  function saveExclusions(ana, number, exclusions, extra = {}) {
+    const member = ana.get().group.participants.find((p) => p.number === number);
+    return ana.update(number, {
+      name: member.name,
+      email: member.number === 1 ? undefined : member.email,
+      exclusions,
+      participants: shown(ana),
+      ...extra,
+    });
+  }
+
+  const cell = (ana, number) => ana.rows().find((p) => p.number === number).exclusions;
+
+  it('gives each participant their exclusions as a list of numbers when the group is opened', () => {
+    const ana = fourParticipants();
+    saveExclusions(ana, 2, [1, 3]);
+    expect(ana.get().group.participants.map((p) => [p.number, p.exclusions])).toEqual([
+      [1, []],
+      [2, [1, 3]],
+      [3, []],
+      [4, []],
+    ]);
+  });
+
+  it('saves them as "1,3" and answers with the whole list, exclusions included', () => {
+    const ana = fourParticipants();
+    const answer = saveExclusions(ana, 2, [1, 3]);
+    expect(answer.ok).toBe(true);
+    expect(answer.participants[1]).toEqual({ ...LUIS, exclusions: [1, 3] });
+    expect(cell(ana, 2)).toBe('1,3');
+  });
+
+  it('accepts them in any order and stores them ascending', () => {
+    const ana = fourParticipants();
+    saveExclusions(ana, 2, [3, 1]);
+    expect(cell(ana, 2)).toBe('1,3');
+  });
+
+  it('clears them with an empty list', () => {
+    const ana = fourParticipants();
+    saveExclusions(ana, 2, [1, 3]);
+    saveExclusions(ana, 2, []);
+    expect(cell(ana, 2)).toBe('');
+  });
+
+  it('leaves them unchanged when the edit carries no exclusions', () => {
+    const ana = fourParticipants();
+    saveExclusions(ana, 2, [1, 3]);
+    expect(ana.update(2, { name: 'Luisito', email: 'luis@example.com' }).ok).toBe(true);
+    expect(cell(ana, 2)).toBe('1,3');
+  });
+
+  it("saves them together with the participant's name and email", () => {
+    const ana = fourParticipants();
+    saveExclusions(ana, 2, [4], { name: 'Luisito', email: 'luisito@example.com' });
+    expect(ana.rows()[1]).toEqual({
+      number: 2,
+      name: 'Luisito',
+      email: 'luisito@example.com',
+      exclusions: '4',
+    });
+  });
+
+  it("leaves everyone else's exclusions as they were: they are one-way", () => {
+    const ana = fourParticipants();
+    saveExclusions(ana, 1, [3]);
+    saveExclusions(ana, 2, [1, 4]);
+    expect(cell(ana, 1)).toBe('3');
+    expect(cell(ana, 3)).toBe('');
+  });
+
+  it('lets me (number 1) choose my own exclusions too', () => {
+    const ana = fourParticipants();
+    expect(saveExclusions(ana, 1, [2]).ok).toBe(true);
+    expect(cell(ana, 1)).toBe('2');
+  });
+
+  it('still refuses a change of my own email (number 1), saving nothing', () => {
+    const ana = fourParticipants();
+    expect(saveExclusions(ana, 1, [2], { email: 'otra@example.com' })).toEqual({
+      ok: false,
+      error: 'cannot_change_organizer_email',
+    });
+    expect(cell(ana, 1)).toBe('');
+  });
+
+  it('allows excluding every other participant', () => {
+    const ana = fourParticipants();
+    expect(saveExclusions(ana, 2, [1, 3, 4]).ok).toBe(true);
+    expect(cell(ana, 2)).toBe('1,3,4');
+  });
+
+  it('starts a new participant with no exclusions', () => {
+    const ana = fourParticipants();
+    const answer = ana.add('Eva', 'eva@example.com');
+    expect(answer.participants[4]).toEqual({
+      number: 5,
+      name: 'Eva',
+      email: 'eva@example.com',
+      exclusions: [],
+    });
+  });
+
+  it.each([
+    ['a duplicate', [1, 1]],
+    ["the participant's own number", [2]],
+    ['a number that is not in the group', [9]],
+    ['a number that is not whole', [1.5]],
+    ['text instead of a number', ['1']],
+    ['something that is not a list', '1,3'],
+  ])('refuses %s with invalid_exclusions, saving nothing', (_, exclusions) => {
+    const ana = fourParticipants();
+    saveExclusions(ana, 2, [3]);
+    const before = ana.rows();
+    expect(saveExclusions(ana, 2, exclusions, { name: 'Luisito' })).toEqual({
+      ok: false,
+      error: 'invalid_exclusions',
+    });
+    expect(ana.rows()).toEqual(before);
+  });
+
+  describe('when the list changed under the open form', () => {
+    it.each([
+      ['someone was removed', (ana) => ana.remove(3)],
+      [
+        'someone was removed and someone else added',
+        (ana) => {
+          ana.remove(4);
+          ana.add('Eva', 'eva@example.com');
+        },
+      ],
+      ['an email changed', (ana) => ana.update(3, { name: 'Marta', email: 'm@example.com' })],
+      ['someone was added', (ana) => ana.add('Eva', 'eva@example.com')],
+    ])('refuses the save with list_changed when %s, saving nothing', (_, change) => {
+      const ana = fourParticipants();
+      const form = shown(ana);
+      change(ana);
+      const before = ana.rows();
+      expect(
+        ana.update(2, {
+          name: 'Luisito',
+          email: 'luis@example.com',
+          exclusions: [1],
+          participants: form,
+        }),
+      ).toEqual({ ok: false, error: 'list_changed' });
+      expect(ana.rows()).toEqual(before);
+    });
+
+    it('accepts the same list, whatever the capitals of the emails', () => {
+      const ana = fourParticipants();
+      const form = shown(ana).map((p) => ({ ...p, email: p.email.toUpperCase() }));
+      expect(
+        ana.update(2, {
+          name: 'Luis',
+          email: 'luis@example.com',
+          exclusions: [1],
+          participants: form,
+        }).ok,
+      ).toBe(true);
+    });
+
+    it('checks the list before the name and email', () => {
+      const ana = fourParticipants();
+      const form = shown(ana);
+      ana.remove(4);
+      expect(ana.update(2, { name: '', email: 'x@', exclusions: [], participants: form })).toEqual({
+        ok: false,
+        error: 'list_changed',
+      });
+    });
+
+    it('refuses a shown list that is not a list of numbers and emails', () => {
+      const ana = fourParticipants();
+      expect(ana.update(2, { name: 'Luis', email: 'luis@example.com', participants: 'x' })).toEqual(
+        {
+          ok: false,
+          error: 'list_changed',
+        },
+      );
+    });
+  });
+
+  it('refuses exclusions on a locked group with locked, before anything else', () => {
+    const ana = fourParticipants();
+    const form = shown(ana);
+    ana.lock();
+    expect(
+      ana.update(2, {
+        name: 'Luis',
+        email: 'luis@example.com',
+        exclusions: [1],
+        participants: form,
+      }),
+    ).toEqual({
+      ok: false,
+      error: 'locked',
+    });
+    expect(cell(ana, 2)).toBe('');
+  });
+
+  it('gives the exclusions as lists after a removal renumbers them', () => {
+    const ana = fourParticipants();
+    saveExclusions(ana, 1, [2, 3]);
+    saveExclusions(ana, 3, [4]);
+    const answer = ana.remove(2);
+    expect(answer.participants.map((p) => [p.number, p.exclusions])).toEqual([
+      [1, [2]],
+      [2, [3]],
+      [3, []],
+    ]);
   });
 });

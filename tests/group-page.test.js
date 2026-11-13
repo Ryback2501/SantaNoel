@@ -150,3 +150,35 @@ describe("a group's participants (web/group.html)", () => {
     expect(form[0]).toMatch(/<p[^>]*class="[^"]*edit-message[^"]*"[^>]*role="alert"/);
   });
 });
+
+describe("a participant's exclusions (web/group.html)", () => {
+  const html = readFileSync(new URL('../web/group.html', import.meta.url), 'utf8');
+  const rowTemplate = () =>
+    html.match(/<template[^>]*id="participant-row-template"[\s\S]*?<\/template>/)[0];
+  const editForm = () =>
+    rowTemplate().match(/<form[^>]*class="[^"]*edit-form[^"]*"[\s\S]*?<\/form>/)[0];
+
+  it('has a place in the row for "No regalará a: …"', () => {
+    expect(rowTemplate()).toMatch(/class="[^"]*participant-exclusions[^"]*"/);
+  });
+
+  it('has the "Puede regalar a" field in the edit form', () => {
+    expect(editForm()).toMatch(/Puede regalar a/);
+  });
+
+  it('has a closed drop-down button showing "Todos"', () => {
+    expect(editForm()).toMatch(
+      /<button[^>]*type="button"[^>]*class="[^"]*exclusions-toggle[^"]*"[^>]*aria-expanded="false"[\s\S]*?Todos[\s\S]*?<\/button>/,
+    );
+  });
+
+  it('has the list of tick boxes hidden until the field is opened', () => {
+    expect(editForm()).toMatch(/<div[^>]*class="[^"]*exclusions-panel[^"]*"[^>]*\shidden[\s>]/);
+  });
+
+  it('places the field after "Correo" and before the form\'s message', () => {
+    const form = editForm();
+    expect(form.indexOf('class="edit-email"')).toBeLessThan(form.indexOf('exclusions-toggle'));
+    expect(form.indexOf('exclusions-toggle')).toBeLessThan(form.indexOf('edit-message'));
+  });
+});

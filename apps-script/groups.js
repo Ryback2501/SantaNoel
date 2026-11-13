@@ -9,6 +9,8 @@
  * `store` is the spreadsheet (spreadsheetStore in sheets.js) or a stand-in in the tests.
  */
 
+/* global parseExclusions */
+
 function listGroups(email, store) {
   const groups = myGroups(email, store).sort(function (a, b) {
     return timeOf(b.created) - timeOf(a.created) || b.position - a.position;
@@ -47,7 +49,12 @@ function getGroup(request, email, store) {
       return a.number - b.number;
     })
     .map(function (participant) {
-      return { number: participant.number, name: participant.name, email: participant.email };
+      return {
+        number: participant.number,
+        name: participant.name,
+        email: participant.email,
+        exclusions: exclusionCells().parseExclusions(participant.exclusions),
+      };
     });
   return {
     ok: true,
@@ -133,6 +140,13 @@ function timeOf(value) {
 
 function refuse(error) {
   return { ok: false, error: error };
+}
+
+// In Apps Script every file shares one global scope; the Node tests load it with require.
+function exclusionCells() {
+  return typeof module !== 'undefined'
+    ? require('./exclusions.js')
+    : { parseExclusions: parseExclusions };
 }
 
 if (typeof module !== 'undefined') {
