@@ -1,6 +1,6 @@
 /* global SANTANOEL_CONFIG, loadGroup, renameGroup, groupIdFrom, addParticipant, updateParticipant,
    removeParticipant, LOAD_FAILED, SAVE_FAILED, LIST_LOCKED, createWaitLayer, pageWaitView,
-   WAIT_TEXTS */
+   WAIT_TEXTS, exclusionsSummary, exclusionsLine, exclusionOptions */
 
 // A group's page (group.html?id=<Group ID>): its name, "Cambiar nombre", and its participants.
 document.addEventListener('DOMContentLoaded', async function () {
@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   );
 
   let locked = false;
+  let shownParticipants = []; // the list as shown, for the exclusions and the "list changed" check
 
   // Not signed in, or the session ended: the home page shows the sign-in (and why, if it expired).
   function goToSignIn() {
@@ -85,10 +86,25 @@ document.addEventListener('DOMContentLoaded', async function () {
     list.querySelectorAll('.participant').forEach(function (row) {
       row.querySelector('.edit-form').hidden = true;
       row.querySelector('.participant-buttons').hidden = locked;
+      closeExclusions(row);
     });
   }
 
+  // Closes a row's "Puede regalar a" list, keeping its ticks.
+  function closeExclusions(row) {
+    row.querySelector('.exclusions-panel').hidden = true;
+    row.querySelector('.exclusions-toggle').setAttribute('aria-expanded', 'false');
+  }
+
+  // A click outside an open "Puede regalar a" field closes its list (the ticks stay).
+  document.addEventListener('click', function (event) {
+    list.querySelectorAll('.exclusions-field').forEach(function (field) {
+      if (!field.contains(event.target)) closeExclusions(field.closest('.participant'));
+    });
+  });
+
   function showParticipants(participants) {
+    shownParticipants = participants;
     list.textContent = '';
     participants.forEach(function (participant) {
       list.appendChild(participantRow(participant));
@@ -103,8 +119,15 @@ document.addEventListener('DOMContentLoaded', async function () {
     const nameField = row.querySelector('.edit-name');
     const emailField = row.querySelector('.edit-email');
     const message = row.querySelector('.edit-message');
+    const excluded = participant.exclusions || [];
     row.querySelector('.participant-text').textContent =
       participant.number + '. ' + participant.name + ' · ' + participant.email;
+    // Shown also when the list is locked: the only place the exclusions are seen then.
+    row.querySelector('.participant-exclusions').textContent = exclusionsLine(
+      shownParticipants,
+      excluded,
+    );
+    const exclusions = exclusionsField(row, participant.number, excluded);
     // Participant 1 is the organizer: never removed, and their email is their Google account.
     if (isOrganizer) row.querySelector('.remove-button').remove();
     emailField.readOnly = isOrganizer;
@@ -113,6 +136,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       closeForms();
       nameField.value = participant.name;
       emailField.value = participant.email;
+      exclusions.reset();
       row.querySelector('.participant-buttons').hidden = true;
       form.hidden = false;
       nameField.focus();
@@ -125,6 +149,10 @@ document.addEventListener('DOMContentLoaded', async function () {
       const values = isOrganizer
         ? { name: nameField.value }
         : { name: nameField.value, email: emailField.value };
+      values.exclusions = exclusions.excluded();
+      values.participants = shownParticipants.map(function (shown) {
+        return { number: shown.number, email: shown.email };
+      });
       save(form, message, WAIT_TEXTS.savingParticipant, function () {
         return updateParticipant(backendUrl, sessionStorage, groupId, participant.number, values);
       });
@@ -142,6 +170,72 @@ document.addEventListener('DOMContentLoaded', async function () {
       });
     }
     return row;
+  }
+
+  // The "Puede regalar a" field of a row: a button that opens a list of tick boxes (ticked = can
+  // give to). Changes stay in the form until "Guardar"; reset() puts back the saved state.
+  function exclusionsField(row, number, savedExcluded) {
+    const toggle = row.querySelector('.exclusions-toggle');
+    const panel = row.querySelector('.exclusions-panel');
+    const summary = row.querySelector('.exclusions-summary');
+    const options = exclusionOptions(shownParticipants, number, savedExcluded);
+
+    function excluded() {
+      return Array.prototype.filter
+        .call(panel.querySelectorAll('input[type="checkbox"]'), function (box) {
+          return !box.checked;
+        })
+        .map(function (box) {
+          return Number(box.value);
+        });
+    }
+
+    function showSummary() {
+      summary.textContent = exclusionsSummary(shownParticipants, excluded());
+      toggle.setAttribute('aria-label', 'Puede regalar a: ' + summary.textContent);
+    }
+
+    function reset() {
+      panel.textContent = '';
+      options.forEach(function (option) {
+        const label = document.createElement('label');
+        label.className = 'exclusion-option';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.value = String(option.number);
+        box.checked = option.ticked;
+        box.addEventListener('change', showSummary);
+        label.appendChild(box);
+        label.appendChild(document.createTextNode(' ' + option.label));
+        panel.appendChild(label);
+      });
+      // Alone in the group: nobody to choose, so the field cannot be opened.
+      toggle.disabled = options.length === 0;
+      closeExclusions(row);
+      showSummary();
+    }
+
+    toggle.addEventListener('click', function () {
+      const opening = panel.hidden;
+      panel.hidden = !opening;
+      toggle.setAttribute('aria-expanded', String(opening));
+      if (opening) {
+        const first = panel.querySelector('input');
+        if (first) first.focus();
+      }
+    });
+
+    // Escape closes only the list (not the form), and the focus goes back to the button.
+    row.querySelector('.exclusions-field').addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || panel.hidden) return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeExclusions(row);
+      toggle.focus();
+    });
+
+    reset();
+    return { reset: reset, excluded: excluded };
   }
 
   // Runs a participant change, blocking the page with `waitText`, and shows its answer. `form`
@@ -162,11 +256,15 @@ document.addEventListener('DOMContentLoaded', async function () {
     buttons.forEach(function (button) {
       button.disabled = false;
     });
-    if (view.kind === 'locked' || view.kind === 'participantNotFound') {
+    if (
+      view.kind === 'locked' ||
+      view.kind === 'participantNotFound' ||
+      view.kind === 'listChanged'
+    ) {
       // The reload continues this wait.
       await reloadGroup(saving);
       // The lock message is already above the list after a lock; otherwise say what happened.
-      if (view.kind === 'participantNotFound') listMessage.textContent = view.message;
+      if (view.kind !== 'locked') listMessage.textContent = view.message;
       return;
     }
     // Released first, so the page can take the focus again.
