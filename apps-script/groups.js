@@ -49,7 +49,10 @@ function getGroup(request, email, store) {
     .map(function (participant) {
       return { number: participant.number, name: participant.name, email: participant.email };
     });
-  return { ok: true, group: { id: group.id, name: group.name, participants: participants } };
+  return {
+    ok: true,
+    group: { id: group.id, name: group.name, locked: isLocked(group), participants: participants },
+  };
 }
 
 function renameGroup(request, email, store) {
@@ -75,11 +78,22 @@ function myGroups(email, store) {
   return store
     .readGroups()
     .map(function (group, position) {
-      return { id: group.id, name: group.name, created: group.created, position: position };
+      return {
+        id: group.id,
+        name: group.name,
+        created: group.created,
+        draw: group.draw,
+        position: position,
+      };
     })
     .filter(function (group) {
       return mine[group.id] === true;
     });
+}
+
+/** Locked = the draw is done (its Draw cell is not empty): the participant list cannot change. */
+function isLocked(group) {
+  return String(group.draw || '').trim() !== '';
 }
 
 function myGroup(groupId, email, store) {
@@ -122,5 +136,16 @@ function refuse(error) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { listGroups, createGroup, getGroup, renameGroup };
+  module.exports = {
+    listGroups,
+    createGroup,
+    getGroup,
+    renameGroup,
+    // Shared with apps-script/participants.js (in Apps Script they are globals).
+    myGroup,
+    isLocked,
+    cleanText,
+    sameText,
+    refuse,
+  };
 }
