@@ -131,7 +131,7 @@ describe('the tick boxes of the "Puede regalar a" field (exclusionOptions)', () 
   it('unticks the excluded ones: ticked means "can give to"', () => {
     expect(exclusionOptions(PARTICIPANTS, 2, [3, 1]).map((o) => [o.number, o.ticked])).toEqual([
       [1, false],
-      [3, true],
+      [3, false],
       [4, true],
     ]);
   });
