@@ -1,5 +1,6 @@
 /* global SANTANOEL_CONFIG, loadGroup, renameGroup, groupIdFrom, addParticipant, updateParticipant,
-   removeParticipant, LOAD_FAILED, SAVE_FAILED, LIST_LOCKED */
+   removeParticipant, LOAD_FAILED, SAVE_FAILED, LIST_LOCKED, createWaitLayer, pageWaitView,
+   WAIT_TEXTS */
 
 // A group's page (group.html?id=<Group ID>): its name, "Cambiar nombre", and its participants.
 document.addEventListener('DOMContentLoaded', async function () {
@@ -21,6 +22,15 @@ document.addEventListener('DOMContentLoaded', async function () {
   const addEmail = document.getElementById('participant-email');
   const addMessage = document.getElementById('add-participant-message');
   const rowTemplate = document.getElementById('participant-row-template');
+
+  // Every wait on the server blocks the page; it has been blocked since it loaded (group.html).
+  const waits = createWaitLayer(
+    pageWaitView(
+      document.getElementById('wait-layer'),
+      document.getElementById('wait-text'),
+      document.querySelector('main'),
+    ),
+  );
 
   let locked = false;
 
@@ -44,14 +54,19 @@ document.addEventListener('DOMContentLoaded', async function () {
     content.hidden = false;
   }
 
-  // Asks the server for the group again: after a lock, or a participant that no longer exists.
-  async function reloadGroup() {
+  // Asks the server for the group: when the page opens, and again after a lock or a participant
+  // that no longer exists. `previous` is the save's wait, still running: it ends only once this
+  // wait has started, so the spinner never stops in between.
+  async function reloadGroup(previous) {
+    const loading = waits.start(WAIT_TEXTS.loadingGroup);
+    if (previous) previous.end();
     let view;
     try {
       view = await loadGroup(backendUrl, sessionStorage, groupId);
     } catch {
       view = { kind: 'error', message: LOAD_FAILED };
     }
+    loading.end();
     if (view.kind === 'signin') return goToSignIn();
     if (view.kind === 'group') return showGroup(view.group);
     showOnlyMessage(view.message);
@@ -110,7 +125,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       const values = isOrganizer
         ? { name: nameField.value }
         : { name: nameField.value, email: emailField.value };
-      save(form, message, function () {
+      save(form, message, WAIT_TEXTS.savingParticipant, function () {
         return updateParticipant(backendUrl, sessionStorage, groupId, participant.number, values);
       });
     });
@@ -119,8 +134,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (removeButton) {
       removeButton.addEventListener('click', function () {
         closeForms();
+        // Nothing is blocked while the question is open: only once it is accepted.
         if (!window.confirm('¿Quitar a ' + participant.name + ' del grupo?')) return;
-        save(null, listMessage, function () {
+        save(null, listMessage, WAIT_TEXTS.removingParticipant(participant.name), function () {
           return removeParticipant(backendUrl, sessionStorage, groupId, participant.number);
         });
       });
@@ -128,9 +144,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     return row;
   }
 
-  // Runs a participant change and shows its answer. `form` (null for a removal) is disabled while
-  // it saves, and keeps what was typed when the change is refused, so it can be fixed.
-  async function save(form, message, change) {
+  // Runs a participant change, blocking the page with `waitText`, and shows its answer. `form`
+  // (null for a removal) keeps what was typed when the change is refused, so it can be fixed.
+  async function save(form, message, waitText, change) {
+    const saving = waits.start(waitText);
     const buttons = form ? form.querySelectorAll('button') : [];
     buttons.forEach(function (button) {
       button.disabled = true;
@@ -145,15 +162,18 @@ document.addEventListener('DOMContentLoaded', async function () {
     buttons.forEach(function (button) {
       button.disabled = false;
     });
-    if (view.kind === 'signin') return goToSignIn();
-    if (view.kind === 'notFound') return showOnlyMessage(view.message);
-    if (view.kind === 'saved') return saved(form, view.participants);
     if (view.kind === 'locked' || view.kind === 'participantNotFound') {
-      await reloadGroup();
+      // The reload continues this wait.
+      await reloadGroup(saving);
       // The lock message is already above the list after a lock; otherwise say what happened.
       if (view.kind === 'participantNotFound') listMessage.textContent = view.message;
       return;
     }
+    // Released first, so the page can take the focus again.
+    saving.end();
+    if (view.kind === 'signin') return goToSignIn();
+    if (view.kind === 'notFound') return showOnlyMessage(view.message);
+    if (view.kind === 'saved') return saved(form, view.participants);
     message.textContent = view.message;
   }
 
@@ -183,10 +203,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     saveButton.disabled = true;
     renameMessage.textContent = '';
     let view;
+    const renaming = waits.start(WAIT_TEXTS.renamingGroup);
     try {
       view = await renameGroup(backendUrl, sessionStorage, groupId, renameField.value);
     } catch {
       view = { kind: 'error', message: SAVE_FAILED };
+    } finally {
+      renaming.end();
     }
     saveButton.disabled = false;
     if (view.kind === 'signin') return goToSignIn();
@@ -212,7 +235,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   addForm.addEventListener('submit', function (event) {
     event.preventDefault();
     const values = { name: addName.value, email: addEmail.value };
-    save(addForm, addMessage, function () {
+    save(addForm, addMessage, WAIT_TEXTS.addingParticipant, function () {
       return addParticipant(backendUrl, sessionStorage, groupId, values);
     });
   });

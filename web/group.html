@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
-    <main class="page">
+    <main class="page" inert>
       <p><a href="index.html" class="back-link">Volver a mis grupos</a></p>
 
       <p id="page-message" class="page-message" role="alert"></p>
@@ -68,10 +68,19 @@
         </template>
       </div>
     </main>
+
+    <!-- Blocks the page while it waits for the server: shown from the start, until the first check ends. -->
+    <div id="wait-layer" class="wait-layer">
+      <div class="wait-box">
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="wait-text" class="wait-text" role="status"></p>
+      </div>
+    </div>
     <script src="config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/groups.js"></script>
+    <script src="js/waiting.js"></script>
     <script src="js/group-page.js"></script>
   </body>
 </html>
