@@ -1,5 +1,6 @@
 /* global checkConnection, startSession, resumeSession, endSession, SIGN_IN_FAILED, SANTANOEL_CONFIG,
-   loadMyGroups, createGroup, groupPageUrl, LOAD_FAILED, SAVE_FAILED */
+   loadMyGroups, createGroup, groupPageUrl, LOAD_FAILED, SAVE_FAILED, createWaitLayer, pageWaitView,
+   WAIT_TEXTS */
 
 // Home page: the connection status, the organizer's sign-in with Google, and their groups.
 document.addEventListener('DOMContentLoaded', async function () {
@@ -16,6 +17,14 @@ document.addEventListener('DOMContentLoaded', async function () {
   const groupNameField = document.getElementById('group-name');
   const firstNameField = document.getElementById('first-name');
   const backendUrl = SANTANOEL_CONFIG.backendUrl;
+  // Every wait on the server blocks the page (the connection check below does not).
+  const waits = createWaitLayer(
+    pageWaitView(
+      document.getElementById('wait-layer'),
+      document.getElementById('wait-text'),
+      document.querySelector('main'),
+    ),
+  );
 
   function show(view) {
     organizerArea.hidden = !view.signedIn;
@@ -25,10 +34,18 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (!view.signedIn) clearGroups();
   }
 
-  // Signed in: show the greeting, then load the groups.
-  async function showOrganizer(view) {
+  // After the sign-in check (`checking`, the wait still running): signed in, show the greeting and
+  // load the groups. The groups' wait starts before the check's ends, so the spinner never stops.
+  async function showOrganizer(view, checking) {
     show(view);
-    if (view.signedIn) await showGroups();
+    if (!view.signedIn) return checking.end();
+    const loading = waits.start(WAIT_TEXTS.loadingGroups);
+    checking.end();
+    try {
+      await showGroups();
+    } finally {
+      loading.end();
+    }
   }
 
   // The server refused the sign-in (for example, it expired): back to the button, with its message.
@@ -101,6 +118,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     saveButton.disabled = true;
     createMessage.textContent = '';
     let view;
+    const creating = waits.start(WAIT_TEXTS.creatingGroup);
     try {
       view = await createGroup(backendUrl, sessionStorage, {
         name: groupNameField.value,
@@ -108,6 +126,8 @@ document.addEventListener('DOMContentLoaded', async function () {
       });
     } catch {
       view = { kind: 'error', message: SAVE_FAILED };
+    } finally {
+      creating.end();
     }
     saveButton.disabled = false;
     if (view.kind === 'signin') return backToSignIn(view.message);
@@ -133,6 +153,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       // Never sign in by itself: only when the organizer clicks the button.
       auto_select: false,
       callback: async function (response) {
+        const checking = waits.start(WAIT_TEXTS.checkingSession);
         let view;
         try {
           view = await startSession(backendUrl, response.credential, sessionStorage);
@@ -140,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async function () {
           // The browser blocks this site's storage: the session cannot be kept.
           view = { signedIn: false, message: SIGN_IN_FAILED };
         }
-        await showOrganizer(view);
+        await showOrganizer(view, checking);
       },
     });
     google.accounts.id.renderButton(document.getElementById('signin-button'), {
@@ -176,6 +197,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   checkConnection(backendUrl).then(function (connection) {
     status.textContent = connection;
   });
+  // The page has been blocked since it loaded (see index.html); this wait takes over from there.
+  const checking = waits.start(WAIT_TEXTS.checkingSession);
   let session;
   try {
     session = await resumeSession(backendUrl, sessionStorage);
@@ -183,5 +206,5 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Storage blocked: nothing stored, so show the sign-in button.
     session = { signedIn: false, message: '' };
   }
-  await showOrganizer(session);
+  await showOrganizer(session, checking);
 });
