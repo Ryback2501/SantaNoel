@@ -51,10 +51,16 @@ describe("a group's page (web/group.html)", () => {
     expect(renameForm()).toMatch(/<p[^>]*id="rename-message"[^>]*role="alert"/);
   });
 
-  it("has no field other than the group's new name, so participant 1 cannot be edited", () => {
+  it('has no fields other than the new group name and the participant forms', () => {
+    // Participant 1's email is locked in the edit form by the page, and refused by the server.
     const fields = html.match(/<(input|textarea|select)\b[^>]*>/g) || [];
-    expect(fields).toHaveLength(1);
-    expect(fields[0]).toMatch(/id="rename-name"/);
+    expect(fields).toHaveLength(5);
+    ['id="rename-name"', 'id="participant-name"', 'id="participant-email"'].forEach((id) => {
+      expect(fields.some((field) => field.includes(id))).toBe(true);
+    });
+    ['class="edit-name"', 'class="edit-email"'].forEach((cls) => {
+      expect(fields.some((field) => field.includes(cls))).toBe(true);
+    });
   });
 
   it('loads its scripts in order: config, backend calls, sign-in, groups, then the page', () => {

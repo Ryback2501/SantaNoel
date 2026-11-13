@@ -72,10 +72,10 @@ describe('groups and participants in the spreadsheet (spreadsheetStore)', () => 
     expect(store.readParticipants()).toEqual([]);
   });
 
-  it('reads the groups below the header', () => {
-    const ss = spreadsheet([['g-1', 'Navidad 2026', CREATED, '', '', '']]);
+  it('reads the groups below the header, with their Draw', () => {
+    const ss = spreadsheet([['g-1', 'Navidad 2026', CREATED, '1-2,2-1', '', '']]);
     expect(spreadsheetStore(ss).readGroups()).toEqual([
-      { id: 'g-1', name: 'Navidad 2026', created: CREATED },
+      { id: 'g-1', name: 'Navidad 2026', created: CREATED, draw: '1-2,2-1' },
     ]);
   });
 
@@ -92,7 +92,7 @@ describe('groups and participants in the spreadsheet (spreadsheetStore)', () => 
   it('reads the participants below the header, with their number as a number', () => {
     const ss = spreadsheet([], [['g-1', '1', 'Ana', 'ana@example.com', '', '', '']]);
     expect(spreadsheetStore(ss).readParticipants()).toEqual([
-      { groupId: 'g-1', number: 1, name: 'Ana', email: 'ana@example.com' },
+      { groupId: 'g-1', number: 1, name: 'Ana', email: 'ana@example.com', exclusions: '' },
     ]);
   });
 
