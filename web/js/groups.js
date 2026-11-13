@@ -9,6 +9,7 @@
  *   { kind: 'notFound', message }                        no such group, or not mine
  *   { kind: 'participantNotFound', message }             that participant no longer exists
  *   { kind: 'locked', message }                          the draw is done: the list is locked
+ *   { kind: 'listChanged', message }                     the list changed under an open form
  *   { kind: 'signin', message }                          go and sign in (message may be '')
  *   { kind: 'error', message }                           a technical failure
  * The server decides everything; the checks here only spare a request that would be refused.
@@ -26,6 +27,7 @@ const NAME_REQUIRED = 'El nombre es obligatorio';
 const EMAIL_INVALID = 'El correo no es válido';
 const LIST_LOCKED = 'El sorteo ya está hecho: la lista está bloqueada';
 const PARTICIPANT_NOT_FOUND = 'No se encontró al participante';
+const LIST_CHANGED = 'La lista de participantes ha cambiado, revisa las exclusiones';
 
 // something@something.tld, the same simple check as the server's.
 const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -111,7 +113,11 @@ async function addParticipant(backendUrl, storage, groupId, form, fetchFn) {
   return listOr(answer);
 }
 
-/** For participant 1 (the organizer) `form.email` is left out: their email cannot change. */
+/**
+ * For participant 1 (the organizer) `form.email` is left out: their email cannot change.
+ * `form.exclusions` (numbers) and `form.participants` (the list the form showed, numbers and
+ * emails) are sent only when given, so the server can tell when the list changed meanwhile.
+ */
 async function updateParticipant(backendUrl, storage, groupId, number, form, fetchFn) {
   const data = { groupId: groupId, number: number };
   if (form.email === undefined) {
@@ -123,6 +129,8 @@ async function updateParticipant(backendUrl, storage, groupId, number, form, fet
     data.name = values.name;
     data.email = values.email;
   }
+  if (form.exclusions !== undefined) data.exclusions = form.exclusions;
+  if (form.participants !== undefined) data.participants = form.participants;
   const idToken = sessionHelpers().storedToken(storage);
   if (!idToken) return { kind: 'signin', message: '' };
   data.idToken = idToken;
@@ -184,6 +192,9 @@ function refusal(answer, failureMessage) {
   }
   if (error === 'not_found') return { kind: 'notFound', message: GROUP_NOT_FOUND };
   if (error === 'locked') return { kind: 'locked', message: LIST_LOCKED };
+  if (error === 'list_changed' || error === 'invalid_exclusions') {
+    return { kind: 'listChanged', message: LIST_CHANGED };
+  }
   if (error === 'participant_not_found') {
     return { kind: 'participantNotFound', message: PARTICIPANT_NOT_FOUND };
   }
