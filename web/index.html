@@ -19,7 +19,24 @@
 
       <section id="organizer-area" class="organizer" hidden>
         <p id="greeting" class="greeting"></p>
-        <button type="button" id="signout-button" class="button">Cerrar sesión</button>
+
+        <ul id="groups-list" class="groups-list"></ul>
+        <p id="groups-message" class="groups-message"></p>
+        <button type="button" id="create-group-button" class="button" hidden>Crear grupo</button>
+
+        <form id="create-group-form" class="form" hidden>
+          <label for="group-name">Nombre del grupo</label>
+          <input id="group-name" name="group-name" type="text" autocomplete="off" />
+          <label for="first-name">Tu nombre</label>
+          <input id="first-name" name="first-name" type="text" autocomplete="off" />
+          <p id="create-group-message" class="form-message" role="alert"></p>
+          <div class="form-buttons">
+            <button type="submit" class="button">Guardar</button>
+            <button type="button" id="create-group-cancel" class="button button-secondary">Cancelar</button>
+          </div>
+        </form>
+
+        <button type="button" id="signout-button" class="button button-secondary">Cerrar sesión</button>
       </section>
 
       <p id="server-status" class="server-status" role="status"></p>
@@ -28,6 +45,7 @@
     <script src="config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/groups.js"></script>
     <script src="js/home.js"></script>
   </body>
 </html>
