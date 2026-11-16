@@ -58,7 +58,15 @@ function getGroup(request, email, store) {
     });
   return {
     ok: true,
-    group: { id: group.id, name: group.name, locked: isLocked(group), participants: participants },
+    group: {
+      id: group.id,
+      name: group.name,
+      locked: isLocked(group),
+      // As stored: empty means the page shows the default text.
+      emailText: String(group.emailText || ''),
+      wishlistText: String(group.wishlistText || ''),
+      participants: participants,
+    },
   };
 }
 
@@ -90,6 +98,8 @@ function myGroups(email, store) {
         name: group.name,
         created: group.created,
         draw: group.draw,
+        emailText: group.emailText,
+        wishlistText: group.wishlistText,
         position: position,
       };
     })

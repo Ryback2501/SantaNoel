@@ -141,6 +141,8 @@ function spreadsheetStore(spreadsheet) {
             name: String(row[1]),
             created: row[2],
             draw: String(row[3]),
+            emailText: String(row[4]),
+            wishlistText: String(row[5]),
           };
         });
     },
@@ -188,6 +190,17 @@ function spreadsheetStore(spreadsheet) {
         if (PARTICIPANT_CELLS[field].text) cell.setNumberFormats([['@']]);
         cell.setValues([[changes[field]]]);
       });
+    },
+    // Writes one of the group's two texts ('email' or 'wishlist') as plain text.
+    setGroupText: function (id, kind, text) {
+      const index = rowsOf('groups').findIndex(function (row) {
+        return String(row[0]) === id;
+      });
+      if (index === -1) throw new Error('No group with ID ' + id);
+      const column = kind === 'email' ? 5 : 6;
+      const cell = spreadsheet.getSheetByName('groups').getRange(index + 2, column, 1, 1);
+      cell.setNumberFormats([['@']]);
+      cell.setValues([[text]]);
     },
     deleteParticipant: function (groupId, number) {
       spreadsheet.getSheetByName('participants').deleteRow(participantRow(groupId, number));

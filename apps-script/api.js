@@ -6,7 +6,7 @@
  */
 
 /* global authorizeOrganizer, listGroups, createGroup, getGroup, renameGroup, addParticipant,
-   updateParticipant, removeParticipant */
+   updateParticipant, removeParticipant, setGroupText */
 
 const ACTIONS = {
   ping: function () {
@@ -49,6 +49,12 @@ const ACTIONS = {
       return participantActions().removeParticipant(request, email, services.store());
     });
   }),
+  // One of the group's two texts (apps-script/texts.js), inside the lock.
+  setGroupText: asOrganizer(function (request, email, services) {
+    return services.withLock(function () {
+      return textActions().setGroupText(request, email, services.store());
+    });
+  }),
 };
 
 // Runs `action` only for a signed-in organizer, with their verified email; otherwise answers
@@ -66,6 +72,10 @@ function organizerCheck() {
   return typeof module !== 'undefined'
     ? require('./auth.js').authorizeOrganizer
     : authorizeOrganizer;
+}
+
+function textActions() {
+  return typeof module !== 'undefined' ? require('./texts.js') : { setGroupText: setGroupText };
 }
 
 function participantActions() {
