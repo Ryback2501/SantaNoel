@@ -34,8 +34,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   );
 
   let locked = false;
-  let shownParticipants = [];
-  const texts = { email: '', wishlist: '' }; // the group's texts as saved ('' = the default) // the list as shown, for the exclusions and the "list changed" check
+  let shownParticipants = []; // the list as shown, for the exclusions and the "list changed" check
+  const texts = { email: '', wishlist: '' }; // the group's texts as saved ('' = the default)
 
   // Not signed in, or the session ended: the home page shows the sign-in (and why, if it expired).
   function goToSignIn() {
