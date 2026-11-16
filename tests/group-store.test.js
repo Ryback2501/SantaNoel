@@ -75,10 +75,17 @@ describe('groups and participants in the spreadsheet (spreadsheetStore)', () => 
     expect(store.readParticipants()).toEqual([]);
   });
 
-  it('reads the groups below the header, with their Draw', () => {
-    const ss = spreadsheet([['g-1', 'Navidad 2026', CREATED, '1-2,2-1', '', '']]);
+  it('reads the groups below the header, with their Draw and their two texts', () => {
+    const ss = spreadsheet([['g-1', 'Navidad 2026', CREATED, '1-2,2-1', 'Hola', 'Queridos']]);
     expect(spreadsheetStore(ss).readGroups()).toEqual([
-      { id: 'g-1', name: 'Navidad 2026', created: CREATED, draw: '1-2,2-1' },
+      {
+        id: 'g-1',
+        name: 'Navidad 2026',
+        created: CREATED,
+        draw: '1-2,2-1',
+        emailText: 'Hola',
+        wishlistText: 'Queridos',
+      },
     ]);
   });
 

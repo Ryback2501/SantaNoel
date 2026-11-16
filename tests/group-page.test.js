@@ -51,11 +51,17 @@ describe("a group's page (web/group.html)", () => {
     expect(renameForm()).toMatch(/<p[^>]*id="rename-message"[^>]*role="alert"/);
   });
 
-  it('has no fields other than the new group name and the participant forms', () => {
+  it('has no fields other than the new group name, the participant forms and the two texts', () => {
     // Participant 1's email is locked in the edit form by the page, and refused by the server.
     const fields = html.match(/<(input|textarea|select)\b[^>]*>/g) || [];
-    expect(fields).toHaveLength(5);
-    ['id="rename-name"', 'id="participant-name"', 'id="participant-email"'].forEach((id) => {
+    expect(fields).toHaveLength(7);
+    [
+      'id="rename-name"',
+      'id="participant-name"',
+      'id="participant-email"',
+      'id="email-text-field"',
+      'id="wishlist-text-field"',
+    ].forEach((id) => {
       expect(fields.some((field) => field.includes(id))).toBe(true);
     });
     ['class="edit-name"', 'class="edit-email"'].forEach((cls) => {

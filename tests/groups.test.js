@@ -124,6 +124,8 @@ describe('creating a group (createGroup)', () => {
         id,
         name: 'Navidad 2026',
         locked: false,
+        emailText: '',
+        wishlistText: '',
         participants: [{ number: 1, name: 'Ana', email: 'ana@example.com', exclusions: [] }],
       },
     });
@@ -206,6 +208,8 @@ describe('opening a group (getGroup)', () => {
       id,
       name: 'Navidad 2026',
       locked: false,
+      emailText: '',
+      wishlistText: '',
       participants: [{ number: 1, name: 'Ana', email: 'ana@example.com', exclusions: [] }],
     });
   });
