@@ -51,11 +51,17 @@ describe("a group's page (web/group.html)", () => {
     expect(renameForm()).toMatch(/<p[^>]*id="rename-message"[^>]*role="alert"/);
   });
 
-  it('has no fields other than the new group name and the participant forms', () => {
+  it('has no fields other than the new group name, the participant forms and the two texts', () => {
     // Participant 1's email is locked in the edit form by the page, and refused by the server.
     const fields = html.match(/<(input|textarea|select)\b[^>]*>/g) || [];
-    expect(fields).toHaveLength(5);
-    ['id="rename-name"', 'id="participant-name"', 'id="participant-email"'].forEach((id) => {
+    expect(fields).toHaveLength(7);
+    [
+      'id="rename-name"',
+      'id="participant-name"',
+      'id="participant-email"',
+      'id="email-text-field"',
+      'id="wishlist-text-field"',
+    ].forEach((id) => {
       expect(fields.some((field) => field.includes(id))).toBe(true);
     });
     ['class="edit-name"', 'class="edit-email"'].forEach((cls) => {
@@ -180,5 +186,60 @@ describe("a participant's exclusions (web/group.html)", () => {
     const form = editForm();
     expect(form.indexOf('class="edit-email"')).toBeLessThan(form.indexOf('exclusions-toggle'));
     expect(form.indexOf('exclusions-toggle')).toBeLessThan(form.indexOf('edit-message'));
+  });
+});
+
+describe("the group's texts (web/group.html)", () => {
+  const html = readFileSync(new URL('../web/group.html', import.meta.url), 'utf8');
+  const section = () => html.match(/<section[^>]*id="group-texts"[\s\S]*?<\/section>/)[0];
+  const block = (kind) =>
+    section().match(new RegExp(`<div[^>]*id="${kind}-text-block"[\\s\\S]*?<\\/form>`))[0];
+  const form = (kind) => block(kind).match(/<form[\s\S]*?<\/form>/)[0];
+
+  it('has a "Textos del grupo" section below the participants, inside the group content', () => {
+    expect(section()).toMatch(/<h2[^>]*>\s*Textos del grupo\s*<\/h2>/);
+    const content = html.match(/<div[^>]*id="group-content"[\s\S]*?<\/main>/)[0];
+    expect(content.indexOf('id="participants"')).toBeLessThan(content.indexOf('id="group-texts"'));
+  });
+
+  it.each([
+    ['email', 'Texto del correo'],
+    ['wishlist', 'Texto de la carta'],
+  ])('has the %s block titled "%s", with its preview and an "Editar" button', (kind, title) => {
+    expect(block(kind)).toMatch(
+      new RegExp(`<h3[^>]*id="${kind}-text-title"[^>]*>\\s*${title}\\s*<\\/h3>`),
+    );
+    expect(block(kind)).toMatch(new RegExp(`id="${kind}-text-preview"`));
+    expect(block(kind)).toMatch(
+      new RegExp(`<button[^>]*id="${kind}-text-edit"[^>]*>\\s*Editar\\s*<\\/button>`),
+    );
+  });
+
+  it.each([['email'], ['wishlist']])(
+    'has the %s form hidden, with a text box with no length limit, "Guardar", "Cancelar" and a message',
+    (kind) => {
+      expect(form(kind)).toMatch(/<form[^>]*\shidden[\s>]/);
+      const box = form(kind).match(/<textarea[^>]*>/);
+      expect(box).not.toBeNull();
+      expect(box[0]).toMatch(new RegExp(`id="${kind}-text-field"`));
+      expect(box[0]).toMatch(new RegExp(`aria-labelledby="${kind}-text-title"`));
+      expect(box[0]).not.toMatch(/maxlength/);
+      expect(form(kind)).toMatch(/<button[^>]*type="submit"[^>]*>\s*Guardar\s*<\/button>/);
+      expect(form(kind)).toMatch(
+        new RegExp(`<button[^>]*id="${kind}-text-cancel"[^>]*>\\s*Cancelar\\s*<\\/button>`),
+      );
+      expect(form(kind)).toMatch(new RegExp(`<p[^>]*id="${kind}-text-message"[^>]*role="alert"`));
+    },
+  );
+
+  it('has the help line "Puedes usar: {{name}}, {{group}}" in the email form only', () => {
+    expect(form('email')).toMatch(/Puedes usar: \{\{name\}\}, \{\{group\}\}/);
+    expect(form('wishlist')).not.toMatch(/Puedes usar/);
+  });
+
+  it('loads the texts script before the page script', () => {
+    const texts = html.indexOf('<script src="js/texts.js"></script>');
+    expect(texts).toBeGreaterThan(-1);
+    expect(texts).toBeLessThan(html.indexOf('<script src="js/group-page.js"></script>'));
   });
 });

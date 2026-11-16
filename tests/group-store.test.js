@@ -75,10 +75,17 @@ describe('groups and participants in the spreadsheet (spreadsheetStore)', () => 
     expect(store.readParticipants()).toEqual([]);
   });
 
-  it('reads the groups below the header, with their Draw', () => {
-    const ss = spreadsheet([['g-1', 'Navidad 2026', CREATED, '1-2,2-1', '', '']]);
+  it('reads the groups below the header, with their Draw and their two texts', () => {
+    const ss = spreadsheet([['g-1', 'Navidad 2026', CREATED, '1-2,2-1', 'Hola', 'Queridos']]);
     expect(spreadsheetStore(ss).readGroups()).toEqual([
-      { id: 'g-1', name: 'Navidad 2026', created: CREATED, draw: '1-2,2-1' },
+      {
+        id: 'g-1',
+        name: 'Navidad 2026',
+        created: CREATED,
+        draw: '1-2,2-1',
+        emailText: 'Hola',
+        wishlistText: 'Queridos',
+      },
     ]);
   });
 
@@ -205,5 +212,41 @@ describe('changing participants in the spreadsheet (spreadsheetStore)', () => {
     const ss = spreadsheet([], rows());
     spreadsheetStore(ss).deleteParticipant('g-1', 2);
     expect(ss.sheets.participants.rows.slice(1)).toEqual([rows()[0], rows()[1], rows()[3]]);
+  });
+});
+
+describe("the group's texts in the spreadsheet (spreadsheetStore)", () => {
+  const rows = () => [
+    ['g-1', 'Navidad 2026', CREATED, '', '', ''],
+    ['g-2', 'Navidad 2027', CREATED, '', 'Hola', 'Queridos'],
+  ];
+
+  it('writes the email text in the Email text cell of that group only, as plain text', () => {
+    const ss = spreadsheet(rows());
+    spreadsheetStore(ss).setGroupText('g-2', 'email', '=1+1\nAdiós');
+    expect(ss.sheets.groups.rows.slice(1)).toEqual([
+      rows()[0],
+      ['g-2', 'Navidad 2027', CREATED, '', '=1+1\nAdiós', 'Queridos'],
+    ]);
+    expect(ss.sheets.groups.formats['3,5']).toBe('@');
+  });
+
+  it('writes the letter text in the Wishlist text cell, as plain text', () => {
+    const ss = spreadsheet(rows());
+    spreadsheetStore(ss).setGroupText('g-1', 'wishlist', 'Queridos Reyes');
+    expect(ss.sheets.groups.rows[1]).toEqual([
+      'g-1',
+      'Navidad 2026',
+      CREATED,
+      '',
+      '',
+      'Queridos Reyes',
+    ]);
+    expect(ss.sheets.groups.formats['2,6']).toBe('@');
+  });
+
+  it('reads a text the spreadsheet turned into a number back as text', () => {
+    const ss = spreadsheet([['g-1', 'Navidad 2026', CREATED, '', 2026, '']]);
+    expect(spreadsheetStore(ss).readGroups()[0].emailText).toBe('2026');
   });
 });

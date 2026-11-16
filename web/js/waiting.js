@@ -20,6 +20,7 @@ const WAIT_TEXTS = {
   renamingGroup: 'Cambiando el nombre…',
   addingParticipant: 'Añadiendo participante…',
   savingParticipant: 'Guardando los cambios…',
+  savingText: 'Guardando el texto…',
   removingParticipant: function (name) {
     return 'Quitando a ' + name + '…';
   },

@@ -40,6 +40,7 @@ const VALUE_MESSAGES = {
   name_required: NAME_REQUIRED,
   email_invalid: EMAIL_INVALID,
   duplicate_email: 'Ese correo ya está en el grupo',
+  text_too_long: 'El texto es demasiado largo (máximo 5000 caracteres)',
 };
 
 // The server's refusals of the sign-in itself.
@@ -149,6 +150,22 @@ async function removeParticipant(backendUrl, storage, groupId, number, fetchFn) 
   return listOr(answer);
 }
 
+/** Saves one of the group's texts (`kind`: 'email' or 'wishlist'); the server cleans it. */
+async function saveGroupText(backendUrl, storage, groupId, kind, text, fetchFn) {
+  const idToken = sessionHelpers().storedToken(storage);
+  if (!idToken) return { kind: 'signin', message: '' };
+  const answer = await ask(
+    backendUrl,
+    'setGroupText',
+    { idToken: idToken, groupId: groupId, kind: kind, text: text },
+    fetchFn,
+  );
+  if (answer && answer.ok === true && typeof answer.text === 'string') {
+    return { kind: 'saved', text: answer.text };
+  }
+  return refusal(answer, SAVE_FAILED);
+}
+
 /** The address of a group's page. */
 function groupPageUrl(groupId) {
   return 'group.html?id=' + encodeURIComponent(groupId);
@@ -237,6 +254,7 @@ if (typeof module !== 'undefined') {
     addParticipant,
     updateParticipant,
     removeParticipant,
+    saveGroupText,
     groupPageUrl,
     groupIdFrom,
   };
