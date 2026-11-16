@@ -1,6 +1,7 @@
 /* global SANTANOEL_CONFIG, loadGroup, renameGroup, groupIdFrom, addParticipant, updateParticipant,
    removeParticipant, LOAD_FAILED, SAVE_FAILED, LIST_LOCKED, createWaitLayer, pageWaitView,
-   WAIT_TEXTS, exclusionsSummary, exclusionsLine, exclusionOptions */
+   WAIT_TEXTS, exclusionsSummary, exclusionsLine, exclusionOptions, saveGroupText, markerPieces,
+   wishLine, DEFAULT_EMAIL_TEXT, DEFAULT_LETTER_TEXT, SAMPLE_WISHES */
 
 // A group's page (group.html?id=<Group ID>): its name, "Cambiar nombre", and its participants.
 document.addEventListener('DOMContentLoaded', async function () {
@@ -33,7 +34,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   );
 
   let locked = false;
-  let shownParticipants = []; // the list as shown, for the exclusions and the "list changed" check
+  let shownParticipants = [];
+  const texts = { email: '', wishlist: '' }; // the group's texts as saved ('' = the default) // the list as shown, for the exclusions and the "list changed" check
 
   // Not signed in, or the session ended: the home page shows the sign-in (and why, if it expired).
   function goToSignIn() {
@@ -50,6 +52,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     title.textContent = group.name;
     locked = group.locked === true;
     lockMessage.textContent = locked ? LIST_LOCKED : '';
+    texts.email = group.emailText || '';
+    texts.wishlist = group.wishlistText || '';
+    // Locked: the text forms close (what was typed is dropped) and "Editar" disappears.
+    textBlocks.forEach(function (block) {
+      block.refresh();
+    });
     showParticipants(group.participants);
     pageMessage.textContent = '';
     content.hidden = false;
@@ -105,6 +113,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   function showParticipants(participants) {
     shownParticipants = participants;
+    // The email preview uses participant 1's name, so it follows the list.
+    showTextPreviews();
     list.textContent = '';
     participants.forEach(function (participant) {
       list.appendChild(participantRow(participant));
@@ -319,7 +329,115 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
     title.textContent = view.group.name;
     closeForms();
+    showTextPreviews();
   });
+
+  // The previews of the two texts. Sample values are highlighted; everything else is the
+  // organizer's text as written, as text nodes (never HTML), with its line breaks.
+  function showTextPreviews() {
+    const organizer = shownParticipants.find(function (participant) {
+      return participant.number === 1;
+    });
+    const emailPreview = document.getElementById('email-text-preview');
+    emailPreview.textContent = '';
+    markerPieces(texts.email || DEFAULT_EMAIL_TEXT, {
+      name: organizer ? organizer.name : '',
+      group: title.textContent,
+    }).forEach(function (piece) {
+      emailPreview.appendChild(
+        piece.value ? sampleValue(piece.text) : document.createTextNode(piece.text),
+      );
+    });
+
+    // The letter text has no markers; the sample wishes follow it.
+    const letterPreview = document.getElementById('wishlist-text-preview');
+    letterPreview.textContent = '';
+    const introduction = document.createElement('p');
+    introduction.className = 'text-preview-introduction';
+    introduction.textContent = texts.wishlist || DEFAULT_LETTER_TEXT;
+    const wishes = document.createElement('ul');
+    wishes.className = 'text-preview-wishes';
+    SAMPLE_WISHES.forEach(function (wish) {
+      const item = document.createElement('li');
+      item.appendChild(sampleValue(wishLine(wish)));
+      wishes.appendChild(item);
+    });
+    letterPreview.appendChild(introduction);
+    letterPreview.appendChild(wishes);
+  }
+
+  function sampleValue(text) {
+    const value = document.createElement('span');
+    value.className = 'sample-value';
+    value.textContent = text;
+    return value;
+  }
+
+  // One text's block: "Editar" swaps the preview for the form. Independent of every other form.
+  function textBlock(kind, defaultText) {
+    const preview = document.getElementById(kind + '-text-preview');
+    const edit = document.getElementById(kind + '-text-edit');
+    const form = document.getElementById(kind + '-text-form');
+    const field = document.getElementById(kind + '-text-field');
+    const message = document.getElementById(kind + '-text-message');
+    field.placeholder = defaultText; // shown lighter while the box is empty
+
+    function close() {
+      form.hidden = true;
+      message.textContent = '';
+      preview.hidden = false;
+      edit.hidden = locked;
+    }
+
+    edit.addEventListener('click', function () {
+      field.value = texts[kind];
+      message.textContent = '';
+      preview.hidden = true;
+      edit.hidden = true;
+      form.hidden = false;
+      field.focus();
+    });
+
+    document.getElementById(kind + '-text-cancel').addEventListener('click', close);
+
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      message.textContent = '';
+      const saving = waits.start(WAIT_TEXTS.savingText);
+      let view;
+      try {
+        view = await saveGroupText(backendUrl, sessionStorage, groupId, kind, field.value);
+      } catch {
+        view = { kind: 'error', message: SAVE_FAILED };
+      }
+      // The reload continues this wait, and shows the locked view.
+      if (view.kind === 'locked') return reloadGroup(saving);
+      saving.end();
+      if (view.kind === 'signin') return goToSignIn();
+      if (view.kind === 'notFound') return showOnlyMessage(view.message);
+      if (view.kind !== 'saved') {
+        // The box keeps what was typed, so it can be fixed and saved again.
+        message.textContent = view.message;
+        return;
+      }
+      texts[kind] = view.text;
+      close();
+      showTextPreviews();
+    });
+
+    return {
+      // After (re)loading the group: a locked group closes the form and hides "Editar".
+      refresh: function () {
+        if (locked) close();
+        else edit.hidden = !form.hidden;
+      },
+    };
+  }
+
+  const textBlocks = [
+    textBlock('email', DEFAULT_EMAIL_TEXT),
+    textBlock('wishlist', DEFAULT_LETTER_TEXT),
+  ];
 
   addButton.addEventListener('click', function () {
     closeForms();

@@ -47,6 +47,38 @@
           </div>
         </form>
 
+        <!-- The group's two texts: a preview with its sample values, and a form to edit each. -->
+        <section id="group-texts" class="group-texts">
+          <h2>Textos del grupo</h2>
+          <div id="email-text-block" class="text-block">
+            <h3 id="email-text-title">Texto del correo</h3>
+            <div id="email-text-preview" class="text-preview"></div>
+            <button type="button" id="email-text-edit" class="button button-small">Editar</button>
+            <form id="email-text-form" class="form text-form" hidden>
+              <textarea id="email-text-field" aria-labelledby="email-text-title" rows="8"></textarea>
+              <p class="text-help">Puedes usar: {{name}}, {{group}}</p>
+              <p id="email-text-message" class="form-message" role="alert"></p>
+              <div class="form-buttons">
+                <button type="submit" class="button">Guardar</button>
+                <button type="button" id="email-text-cancel" class="button button-secondary">Cancelar</button>
+              </div>
+            </form>
+          </div>
+          <div id="wishlist-text-block" class="text-block">
+            <h3 id="wishlist-text-title">Texto de la carta</h3>
+            <div id="wishlist-text-preview" class="text-preview"></div>
+            <button type="button" id="wishlist-text-edit" class="button button-small">Editar</button>
+            <form id="wishlist-text-form" class="form text-form" hidden>
+              <textarea id="wishlist-text-field" aria-labelledby="wishlist-text-title" rows="8"></textarea>
+              <p id="wishlist-text-message" class="form-message" role="alert"></p>
+              <div class="form-buttons">
+                <button type="submit" class="button">Guardar</button>
+                <button type="button" id="wishlist-text-cancel" class="button button-secondary">Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
         <!-- One participant's row; its edit form opens inside it. -->
         <template id="participant-row-template">
           <li class="participant">
@@ -90,6 +122,7 @@
     <script src="js/auth.js"></script>
     <script src="js/groups.js"></script>
     <script src="js/exclusions.js"></script>
+    <script src="js/texts.js"></script>
     <script src="js/waiting.js"></script>
     <script src="js/group-page.js"></script>
   </body>
