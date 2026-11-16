@@ -1,7 +1,7 @@
 /* global SANTANOEL_CONFIG, loadGroup, renameGroup, groupIdFrom, addParticipant, updateParticipant,
    removeParticipant, LOAD_FAILED, SAVE_FAILED, LIST_LOCKED, createWaitLayer, pageWaitView,
    WAIT_TEXTS, exclusionsSummary, exclusionsLine, exclusionOptions, saveGroupText, markerPieces,
-   wishLine, DEFAULT_EMAIL_TEXT, DEFAULT_LETTER_TEXT, SAMPLE_WISHES */
+   DEFAULT_EMAIL_TEXT, DEFAULT_LETTER_TEXT */
 
 // A group's page (group.html?id=<Group ID>): its name, "Cambiar nombre", and its participants.
 document.addEventListener('DOMContentLoaded', async function () {
@@ -349,21 +349,9 @@ document.addEventListener('DOMContentLoaded', async function () {
       );
     });
 
-    // The letter text has no markers; the sample wishes follow it.
-    const letterPreview = document.getElementById('wishlist-text-preview');
-    letterPreview.textContent = '';
-    const introduction = document.createElement('p');
-    introduction.className = 'text-preview-introduction';
-    introduction.textContent = texts.wishlist || DEFAULT_LETTER_TEXT;
-    const wishes = document.createElement('ul');
-    wishes.className = 'text-preview-wishes';
-    SAMPLE_WISHES.forEach(function (wish) {
-      const item = document.createElement('li');
-      item.appendChild(sampleValue(wishLine(wish)));
-      wishes.appendChild(item);
-    });
-    letterPreview.appendChild(introduction);
-    letterPreview.appendChild(wishes);
+    // The letter text has no markers: it is shown exactly as written.
+    document.getElementById('wishlist-text-preview').textContent =
+      texts.wishlist || DEFAULT_LETTER_TEXT;
   }
 
   function sampleValue(text) {

@@ -318,16 +318,6 @@ h1 {
   overflow-wrap: anywhere;
 }
 
-.text-preview-introduction {
-  margin: 0;
-}
-
-.text-preview-wishes {
-  margin: 0.75rem 0 0;
-  padding-left: 1.25rem;
-  white-space: normal;
-}
-
 .sample-value {
   font-weight: 700;
   color: var(--green);

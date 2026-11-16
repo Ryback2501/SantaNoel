@@ -1,7 +1,7 @@
 /**
  * The group's two texts. The email text can use two markers, `{{name}}` (the participant receiving
  * the email) and `{{group}}` (the group's name), in any upper or lower case; anything else stays as
- * written. The letter text has no markers: it is shown exactly as written, with the wishes below.
+ * written. The letter text has no markers: it is shown exactly as written.
  * An empty text means the default one.
  */
 
@@ -13,13 +13,6 @@ const DEFAULT_EMAIL_TEXT =
 
 const DEFAULT_LETTER_TEXT =
   'Queridos Reyes Magos:\n\nEste año me he portado muy bien, así que os pido:';
-
-// The wishes shown below the letter text in its preview.
-const SAMPLE_WISHES = [
-  { text: 'Un libro de cocina', link: '' },
-  { text: '', link: 'https://example.com/bufanda' },
-  { text: 'Unos auriculares', link: 'https://example.com/auriculares' },
-];
 
 /**
  * The text split into pieces, each `{ text, value }`: `value` is true for a filled-in marker, so
@@ -50,22 +43,11 @@ function fillMarkers(text, values) {
     .join('');
 }
 
-/** A wish on one line: its text, its link, or the text then the link after a space. */
-function wishLine(wish) {
-  return [wish.text, wish.link]
-    .filter(function (part) {
-      return part;
-    })
-    .join(' ');
-}
-
 if (typeof module !== 'undefined') {
   module.exports = {
     DEFAULT_EMAIL_TEXT,
     DEFAULT_LETTER_TEXT,
-    SAMPLE_WISHES,
     markerPieces,
     fillMarkers,
-    wishLine,
   };
 }
