@@ -7,10 +7,8 @@ const require = createRequire(import.meta.url);
 const {
   DEFAULT_EMAIL_TEXT,
   DEFAULT_LETTER_TEXT,
-  SAMPLE_WISHES,
   fillMarkers,
   markerPieces,
-  wishLine,
 } = require('../web/js/texts.js');
 const { saveGroupText } = require('../web/js/groups.js');
 const { WAIT_TEXTS } = require('../web/js/waiting.js');
@@ -105,27 +103,6 @@ describe('the pieces of a filled text, so the preview can highlight the values (
 
   it('gives nothing for an empty text', () => {
     expect(markerPieces('', VALUES)).toEqual([]);
-  });
-});
-
-describe("the letter preview's sample wishes", () => {
-  it('has a text-only wish, a link-only wish and one with both', () => {
-    expect(SAMPLE_WISHES).toEqual([
-      { text: 'Un libro de cocina', link: '' },
-      { text: '', link: 'https://example.com/bufanda' },
-      { text: 'Unos auriculares', link: 'https://example.com/auriculares' },
-    ]);
-  });
-
-  it.each([
-    [{ text: 'Un libro de cocina', link: '' }, 'Un libro de cocina'],
-    [{ text: '', link: 'https://example.com/bufanda' }, 'https://example.com/bufanda'],
-    [
-      { text: 'Unos auriculares', link: 'https://example.com/auriculares' },
-      'Unos auriculares https://example.com/auriculares',
-    ],
-  ])('shows %j on one line as %j', (wish, line) => {
-    expect(wishLine(wish)).toBe(line);
   });
 });
 
